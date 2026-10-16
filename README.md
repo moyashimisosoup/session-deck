@@ -2,7 +2,7 @@
 
 **ChatGPT・Claude Code・Codexの作業とセッションを横断して俯瞰するWebダッシュボード。**
 
-> v0.1.0 は操作可能な**デモ試作版**です。同梱されているプロジェクト・作業・セッション・引継ぎは架空の情報で、実際のAIサービスやGitHubには接続しません。
+> **2つの表示を分離しています。** `index.html` は架空セッションの操作デモ、`portfolio.html` はGitHubで管理する実アプリ台帳と**公開リポジトリの観測メタデータ**を扱う読取り専用画面です。実際のChatGPT/Claude Code/Codexセッションを自動取得する機能ではありません。
 
 ## デモを動かす
 
@@ -16,16 +16,16 @@ python -m http.server 8000
 
 ブラウザで `http://localhost:8000/` を開きます。
 
-GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → Source: GitHub Actions` を使用します。`main` のWebアプリ本体（`index.html` / `styles.css` / `app.js`）または `.github/workflows/deploy-pages.yml` を更新すると、[Deploy Session Deck to GitHub Pages](../../actions/workflows/deploy-pages.yml) がGitHubホストのUbuntu上で走り、**静的デモの3ファイルだけ**をPagesに配信します。手動実行（workflow_dispatch）も可能です。公開URL: https://moyashimisosoup.github.io/session-deck/ 。**ワークフローの成功と実URLでの読み戻しの両方で配信を検証してください。**
+GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → Source: GitHub Actions`。 [公開・週次収集ワークフロー](.github/workflows/deploy-pages.yml) が `index.html` / `styles.css` / `app.js` / `portfolio.html` / 公開用台帳 / **生成された公開GitHub観測JSON**のみをステージングして配信します。**毎週月曜10:17（JST）頃に再収集**し、対象ファイルへのpushやGitHub Actionsの `Run workflow` でも実行できます（GitHub側で実行遅延の可能性あり）。公開URL: https://moyashimisosoup.github.io/session-deck/ 。配信後は実URLを読み戻して確認してください。
 
 ## アプリ台帳（実データの読取り専用画面）
 
 - [アプリ台帳を開く](portfolio.html) ／ [台帳の正本](docs/APP_PORTFOLIO.md)
 - 実際のアプリ登録内容を、GitHubの公開Markdownから画面表示時に読み込みます。名称・段階・次の作業で検索し、Repo確認済みと会話ベースの構想を絞り込めます。
-- **台帳は手動・節目更新が基本**。他リポジトリやチャットの進捗を自動収集する機能は未実装です。ブラウザからの編集・GitHubへの自動書込みもしません。
+- **台帳は手動・節目更新が基本**。公開リポジトリ13件をGitHub REST APIで週次・手動・台帳更新時に収集し、最新コミット・Actions・直近の未完了PR/Issueのメタデータを表示します。変更検出はコミット差分の候補提示のみで、台帳の自動書込みや、チャット本文の自動収集は行いません。
 - [初回の吸い上げ・今後の更新ルール](docs/PORTFOLIO_OPERATIONS.md)
 - この画面と、架空セッション情報だけを表示する既存デモ画面は独立しています。公開台帳に非公開セッションURL・個人情報を記録しないでください。
-- GitHub Pagesは`portfolio.html`と`docs/APP_PORTFOLIO.md`を静的に配信します。配信確認・スマホ実機検証は別途必要です。
+- **収集・公開確認済み（2026-10-17）**：GitHub Actionsの公開データ収集が13/13件成功し、Pagesの [portfolio.html](https://moyashimisosoup.github.io/session-deck/portfolio.html) と [観測JSON](https://moyashimisosoup.github.io/session-deck/data/portfolio-observations.json) で読戻し確認済み。iPhone実機操作は未確認です。
 
 ## v0.1で試せること
 
@@ -39,7 +39,7 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 
 ## 現状と制約
 
-- **GitHubへ保存済み**: HTML・CSS・JavaScriptと設計文書。
+- **GitHubへ保存済み**: HTML・CSS・JavaScript、公開GitHub観測スクリプト、オフラインテスト、ワークフロー、設計文書。
 - **確認済み（2026-10-17）**: GitHub Pages上でセッション管理デモのトップページがHTTP 200、アプリ台帳画面がHTTP 200・全21件表示。Actions [run #3](https://github.com/moyashimisosoup/session-deck/actions/runs/38943748943) が成功。
 - **未確認**: iPhone実機での動作、デモの全操作・ブラウザE2Eテスト。
 - **未実装**: 実サービスのセッション自動取得、オンライン同期、実チャット名の自動改名、認証付きデータベース。
@@ -55,6 +55,11 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 | [index.html](index.html) | 画面のHTML |
 | [styles.css](styles.css) | レスポンシブな外観 |
 | [app.js](app.js) | 架空データ、画面操作、ローカル保存 |
+| [portfolio.html](portfolio.html) | 実台帳＋公開GitHub観測の閲覧UI |
+| [docs/APP_PORTFOLIO.md](docs/APP_PORTFOLIO.md) | アプリ進捗の唯一の中央台帳 |
+| [scripts/collect_portfolio.py](scripts/collect_portfolio.py) | 公開GitHub情報の取得・検証・配信用JSON生成 |
+| [tests/test_collect_portfolio.py](tests/test_collect_portfolio.py) | 台帳解析・公開境界・差分検知のオフラインテスト |
+| [docs/PORTFOLIO_OPERATIONS.md](docs/PORTFOLIO_OPERATIONS.md) | 週次運用、初回吸い上げ、失敗時の対応 |
 | [docs/CONCEPT.md](docs/CONCEPT.md) | 初期構想、原則、データモデル |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 今後の優先順位、実装フェーズと完了条件 |
 | [docs/INTEGRATION_PLAN.md](docs/INTEGRATION_PLAN.md) | 外部連携、安全境界、データの公開・非公開 |
@@ -67,8 +72,8 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 1. PCとiPhoneでの表示・操作テストを実施し、必要なUI修正を行う。
 2. 確認済みのGitHub PagesでPC・スマホの主要操作を検証する。
 3. 非公開データ管理の方式を決め、作業IDとセッションIDのスキーマを確定する。
-4. GitHub読取り連携、Claude Code / Codexの既存監視出力との接続、ChatGPT拡張連携を順次検証する。
+4. 公開GitHubの読取り連携は試作稼働済み。今後は変更候補のレビューを改善し、プライバシー・認証設計後に限りClaude Code / Codex / ChatGPTの非公開セッション連携を検討する。
 
-実データ連携は[取り込み計画](docs/REAL_DATA_INGESTION_PLAN.md)、UIの小気味よい動きは[モーション設計](docs/UI_MOTION_DESIGN.md)に段階的実装の条件を記しました。**両方とも現在は計画書であり、実データ取得・追加アニメーションはまだ実装していません。**
+非公開セッション情報の連携は[取り込み計画](docs/REAL_DATA_INGESTION_PLAN.md)、UIモーションは[設計](docs/UI_MOTION_DESIGN.md)を参照してください。**公開GitHubメタデータ収集のみ実装済み**で、非公開AIセッションの収集と追加モーションの計画は未実装です。
 
 より詳しくは[開発ロードマップ](docs/ROADMAP.md)を参照してください。TradingSystemの運用正本や権限境界を、このリポジトリが変更することはありません。
