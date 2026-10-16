@@ -1,4 +1,4 @@
-# アプリ・ポートフォリオ運用手順 v1.0
+# アプリ・ポートフォリオ運用手順 v1.1
 
 初版: 2026-10-17  
 正本: [APP_PORTFOLIO.md](APP_PORTFOLIO.md)  
@@ -8,7 +8,7 @@
 
 - **各アプリのリポジトリ**: ソース、仕様、GitHub Issue/PR、検証ログ、今後の作業の一次情報。
 - **APP_PORTFOLIO.md**: 全アプリの目次と現在地。詳細な仕様の重複記載は避ける。
-- **Session Deck UI**: 上記Markdownを**読取り専用**で表示する。表示やフィルタ操作はGitHubを書き換えない。
+- **Session Deck UI**: Markdown台帳と公開GitHub観測JSONを**読取り専用**で表示します。表示やフィルタ操作はGitHubを書き換えません。
 - **チャット／Codex／Claude Code**: 意図・意思決定・作業中の状況の補足情報。各セッションの主張はコミット・テスト・実URL等の根拠が取れるまで「確認済み」にしない。
 
 ## 日常運用：イベント駆動方式
@@ -57,26 +57,43 @@
 
 **適用範囲**：ChatGPTのプロジェクト共通指示は他のChatGPTプロジェクト／Codex／Claude Codeへ自動伝達されない。必要なら各RepoのAGENTS.mdやCLAUDE.mdからこの文書を案内する。ただし既存のAGENTS.md・CLAUDE.mdの安全・承認・運用規則を変更・上書きしない。
 
-## 週次棚卸し（手動を基本に、将来は読取り専用自動化）
+## GitHub公開リポジトリの自動収集（2026-10-17稼働開始）
 
-- 数分のGitHub差分チェック：前週から更新されたリポジトリのREADME、コミット、PR、Actionsを確認。
-- 「更新はあったが次の作業不明」「検証待ち」「未公開」「重複Repo」のみ優先して照合。
-- 作業の無いRepoを自動的に「停止」と分類しない。
-- 台帳更新に関係する差分が無ければ**何もコミットしない**。
-- 将来の定期ジョブでも、最初は読取りのみで差分候補を提示する。GitHub台帳への書込みは認可・競合対策・監査記録を整備してから。
+[GitHub Actions](../.github/workflows/deploy-pages.yml)で[収集プログラム](../scripts/collect_portfolio.py)を実行し、公開GitHub REST APIから台帳A節のAPP-001〜013に紐づくRepoを観測します。台帳B節の会話ベース構想は自動収集しません。
+
+- **定期実行**：毎週月曜日10:17 JST（UTC月曜01:17）。GitHub側で遅延する場合があります。中央台帳・UI・収集プログラム・ワークフローの変更でも自動実行します。
+- **手動実行**：[Actions → Deploy Session Deck to GitHub Pages](https://github.com/moyashimisosoup/session-deck/actions/workflows/deploy-pages.yml) → **Run workflow** → `main` を選択。成功後に[アプリ台帳](https://moyashimisosoup.github.io/session-deck/portfolio.html)を再表示してください。
+- **収集対象**：公開Repoの最新コミットSHA/日時、Actionsの直近Run・対象SHA、公開の未完了PR/Issueの番号・リンク・日時の一部。直近数件は**サンプル**であり総数ではありません。
+- **収集しない**：PR/Issueのタイトル・本文、実チャット、非公開Repo、個人情報、資格情報、未コミット差分。APIがprivateを返すRepoは登録されていても観測情報を公開しません。
+- **配信先**：Pagesの[観測JSON](https://moyashimisosoup.github.io/session-deck/data/portfolio-observations.json)。GitHubのリポジトリには生成JSONをコミットしません。**進捗の正本は引き続きMarkdown**です。
+- **差分**：前回配信した公開観測JSONと最新SHAを比較し、`changed`／`unchanged`／`baseline`／`unavailable`に分類します。コミット差分は「進捗更新候補」であり、機能完成や試験成功を意味しません。
+- **CI整合性**：最後のActions Runが現行コミットと一致するか別途表示します。過去の成功を最新コミットの成功と誤認しません。
+- **失敗**：一部取得不能は`partial`／`error`と表示し「変更なし」にしません。全対象取得失敗時は配信を失敗にし、既存Pagesデータを維持します。
+- **権限と安全**：通常のGitHub Actions `GITHUB_TOKEN`を`contents:read`に制限して使用。別Repoへ書込まず、トークンは公開JSON・HTML・ログに出力しません。
+
+**初回稼働確認**：2026-10-17、公開Repo 13/13件の取得とJSON配信、GitHub Actions [run #38948749258](https://github.com/moyashimisosoup/session-deck/actions/runs/38948749258) 成功、公開Web画面の読戻しを確認しました。モバイル実機操作・以後の週次実行は未確認です。
+
+### 週次の進捗確認と台帳反映
+
+1. 台帳の「前回収集からコミット更新あり」を確認する。
+2. RepoのREADME・コミット・PR・CI・公開URLを読取り、**重要な状態変化だけ**APP-IDの行に反映する。
+3. 他チャットの未保存成果は上記の「初回棚卸し依頼」で収集する。報告内容とGitHub証拠が一致しなければ未確認のままにする。
+4. 台帳の更新時は最新バージョンを取得してから差分を編集し、競合・他行の上書きを防ぐ。変更がなければコミットしない。
+
+**運用上の制限**：公開Repoが60日間非アクティブだとGitHubのスケジュールは無効化され得ます。Actionsで次回の実行を確認し、必要なら再有効化してください。週次のメール通知や全チャット自動収集は未実装です。
 
 ## Session Deck UIの仕様
 
 - [portfolio.html](../portfolio.html) はPagesに同梱する `docs/APP_PORTFOLIO.md` をブラウザで読み込み、A節とB節のAPP-ID行を抽出する。
 - 名前・状態・「次の作業」の検索、段階フィルタ、Repo確認済み／会話ベースの区分切替ができる。
-- **Markdownだけがデータの正本**。UIに二重のアプリJSONを内蔵しない。
+- **Markdownだけが進捗の正本**。生成JSONは観測データであり、段階・課題・次の作業を上書きしません。
 - 台帳が変わるとGitHub ActionsによるPages再配信対象になる。公開URLで読めるかは別途確認する。
 - 読取り不能時は空データを真のゼロ件として扱わず、GitHub正本へのリンクを残す。
 - この画面は**公開情報のみ**を表示する。個人情報や非公開セッション情報を登録しない。
 
 ## 今後の拡張候補
 
-1. 各アプリのREADMEやIssueを読取り専用で収集し、台帳との差分候補を表示する。
+1. 取得済みコミットやPR/Issueの参照導線を改善し、重要な差分を人間が採用するレビューUIを整備する。
 2. APP-IDとSession Deckのwork_idを対応づける。ただし「アプリ」「作業」「セッション」は別エンティティ。
 3. 一覧から詳細履歴、最終検証日、公開URL、変更根拠へ遷移できるようにする。
 4. 項目数が増えたらYAML/JSONを**単一正本として移行**する。MarkdownとJSONの二重手入力はしない。
