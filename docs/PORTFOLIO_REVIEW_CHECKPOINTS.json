@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "description": "Initial observation anchors only; no review is implied. Never automatically advance on collection.",
+  "bootstrap_observed_at": "2026-10-16T18:53:03Z",
+  "checkpoints": [
+    {
+      "app_id": "APP-001",
+      "repo": "moyashimisosoup/session-deck",
+      "anchor_sha": "cfe4f1f45ae84d39895fc991195a690d47983143",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-002",
+      "repo": "yama-books/crossword-maker",
+      "anchor_sha": "44ae754e3e6cf37055b37e2bec9357806bc0db29",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-003",
+      "repo": "yama-books/mansion-poet",
+      "anchor_sha": "6f34cb30318fcc56f934926a02652f51b235b487",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-004",
+      "repo": "yama-books/reverse-planner",
+      "anchor_sha": "c8b37c96307a05b6b4e346352bff407d2f78dbb5",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-005",
+      "repo": "moyashimisosoup/pdf-works",
+      "anchor_sha": "cc547b82e566b078b6f8470fa03c0cd392f75316",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-006",
+      "repo": "yama-books/soba-price",
+      "anchor_sha": "788fdcadd64de39e303eeb4d2bd550734f6449be",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-007",
+      "repo": "yama-books/koten",
+      "anchor_sha": "1f68bab2a8252980c63f5060865978cb65b0aa51",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-008",
+      "repo": "yama-books/kaibun",
+      "anchor_sha": "ff4cb87d4fae20ce61a7bc90f9e9693ee8c8ccef",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-009",
+      "repo": "yama-books/nihongo-apps",
+      "anchor_sha": "38a56a2724ed0fa340260423b22c382344762db0",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-010",
+      "repo": "moyashimisosoup/shukudai-notebook",
+      "anchor_sha": "97cec598b939307320f310f41cb71751dd370468",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-011",
+      "repo": "moyashimisosoup/word",
+      "anchor_sha": "159fc0f062444e44fcdc0bd567110644b6e47dcf",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-012",
+      "repo": "yama-books/genpei-sandbox",
+      "anchor_sha": "9e9ae995e60a711eac217d6e89523118a623babc",
+      "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-013",
+      "repo": "yama-books/basho-atlas",
+      "anchor_sha": "755e07ed6e684b3af12b5c8288e7f11fe0ec6ba7",
+      "anchor_kind": "bootstrap"
+    }
+  ]
+}
