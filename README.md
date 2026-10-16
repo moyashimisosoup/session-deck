@@ -16,7 +16,7 @@ python -m http.server 8000
 
 ブラウザで `http://localhost:8000/` を開きます。
 
-GitHub Pagesに配信する場合は、GitHubのリポジトリ設定で `Settings → Pages → Deploy from a branch → main / (root)` を選びます。ページの実URLが表示されるまで待ち、PC・スマホで再読込して動作を確認してください。**ソースがmainにあることは、Pagesの設定・配信完了を意味しません。**
+GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → Source: GitHub Actions` を使用します。`main` のWebアプリ本体（`index.html` / `styles.css` / `app.js`）または `.github/workflows/deploy-pages.yml` を更新すると、[Deploy Session Deck to GitHub Pages](../../actions/workflows/deploy-pages.yml) がGitHubホストのUbuntu上で走り、**静的デモの3ファイルだけ**をPagesに配信します。手動実行（workflow_dispatch）も可能です。公開URL: https://moyashimisosoup.github.io/session-deck/ 。**ワークフローの成功と実URLでの読み戻しの両方で配信を検証してください。**
 
 ## v0.1で試せること
 
