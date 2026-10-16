@@ -10,6 +10,8 @@ on:
       - 'portfolio.html'
       - 'portfolio-ui.css'
       - 'portfolio-ui.js'
+      - 'portfolio-polish.css'
+      - 'portfolio-shortcuts.js'
       - '.github/workflows/check-portfolio.yml'
   push:
     branches:
@@ -36,11 +38,14 @@ jobs:
       - name: Validate external UI JavaScript and accessibility hooks
         run: |
           node --check portfolio-ui.js
+          node --check portfolio-shortcuts.js
           python3 - <<'PY'
           from pathlib import Path
           html=Path('portfolio.html').read_text(encoding='utf-8')
           script=Path('portfolio-ui.js').read_text(encoding='utf-8')
           css=Path('portfolio-ui.css').read_text(encoding='utf-8')
+          polish=Path('portfolio-polish.css').read_text(encoding='utf-8')
+          shortcuts=Path('portfolio-shortcuts.js').read_text(encoding='utf-8')
           required=['id="list"','id="syncStatus"','id="pendingCount"','id="copyIntake"','id="stage"','id="sort"','id="search"']
           missing=[x for x in required if x not in html]
           if missing:
@@ -51,4 +56,13 @@ jobs:
               raise SystemExit('Three-column content contract missing')
           if '@media(max-width:720px)' not in css or 'prefers-reduced-motion' not in css:
               raise SystemExit('Mobile or reduced-motion support missing')
+          required_polish=['id="commandLauncher"','id="themeToggle"','portfolio-shortcuts.js','portfolio-polish.css']
+          if any(x not in html for x in required_polish):
+              raise SystemExit('Command launcher, toggle or assets missing')
+          if 'setView:' not in script or 'focusApp:' not in script or 'getApps:' not in script:
+              raise SystemExit('Navigation API for command menu missing')
+          if 'openPalette' not in shortcuts or 'moveSelection' not in shortcuts or 'isTyping' not in shortcuts:
+              raise SystemExit('Command palette or keyboard checks missing')
+          if ':root[data-theme="dark"]' not in polish or 'prefers-reduced-motion' not in polish:
+              raise SystemExit('Dark theme or motion reduction missing')
           PY
