@@ -40,7 +40,8 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 ## 現状と制約
 
 - **GitHubへ保存済み**: HTML・CSS・JavaScriptと設計文書。
-- **未確認**: GitHub Pages配信状態、iPhone実機での動作、ブラウザE2Eテスト。
+- **確認済み（2026-10-17）**: GitHub Pages上でセッション管理デモのトップページがHTTP 200、アプリ台帳画面がHTTP 200・全21件表示。Actions [run #3](https://github.com/moyashimisosoup/session-deck/actions/runs/38943748943) が成功。
+- **未確認**: iPhone実機での動作、デモの全操作・ブラウザE2Eテスト。
 - **未実装**: 実サービスのセッション自動取得、オンライン同期、実チャット名の自動改名、認証付きデータベース。
 - ブラウザ上のデモ編集は実際のセッション・GitHub・Claude Code / Codexの作業には影響しません。
 - このデモに入力したデータはブラウザのlocalStorageに保存されます。会話本文、実セッションID、内部URL、口座情報、認証情報など**実データを入力しない**でください。JSONエクスポートにも入力内容が入ります。
@@ -64,7 +65,7 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 ## 次の段階
 
 1. PCとiPhoneでの表示・操作テストを実施し、必要なUI修正を行う。
-2. GitHub Pagesで公開する場合は設定と実URLを確認する。
+2. 確認済みのGitHub PagesでPC・スマホの主要操作を検証する。
 3. 非公開データ管理の方式を決め、作業IDとセッションIDのスキーマを確定する。
 4. GitHub読取り連携、Claude Code / Codexの既存監視出力との接続、ChatGPT拡張連携を順次検証する。
 
