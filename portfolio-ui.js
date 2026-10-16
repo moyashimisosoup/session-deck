@@ -58,11 +58,7 @@
   }
   function statusOf(app) {
     const tail=app.stage.includes('／') ? app.stage.split('／').slice(1).join('／') : '';
-    if (/保留/.test(tail)) return '保留';
-    if (/検証待ち|確認待ち|未確認/.test(tail)) return '検証待ち';
-    if (/進行中|改善中|作業中/.test(tail)) return '進行中';
-    if (/未着手/.test(tail)) return '未着手';
-    return tail ? tail : '状態未記載';
+    return tail || '状態未記載';
   }
   function looksActive(a) {
     return /進行中|改善中|作業中/.test(a.stage) && !/保留/.test(statusOf(a));
