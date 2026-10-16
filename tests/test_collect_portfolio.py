@@ -107,7 +107,8 @@ class CollectorTests(unittest.TestCase):
         collector.annotate_review(record, checkpoints)
         self.assertEqual("baseline", record["review_status"])
 
-    def test_pending_stays_pending_across_multiple_observations(self):
+    @patch.object(collector, "request_json", side_effect=mock_api)
+    def test_pending_stays_pending_across_multiple_observations(self, _):
         checkpoints = {"APP-001": {"repo": "moyashimisosoup/session-deck", "anchor_sha": SHA_1, "anchor_kind": "bootstrap"}}
         for _ in range(3):
             result = collector.fetch_one(collector.parse_ledger(LEDGER)[0], {"moyashimisosoup/session-deck": {"commit": {"sha": SHA_2}}}, DATE)
