@@ -13,6 +13,7 @@ on:
       - scripts/collect_portfolio.py
       - tests/test_collect_portfolio.py
       - docs/APP_PORTFOLIO.md
+      - docs/PORTFOLIO_REVIEW_CHECKPOINTS.json
       - .github/workflows/deploy-pages.yml
   workflow_dispatch:
   schedule:
