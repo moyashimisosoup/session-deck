@@ -1,0 +1,45 @@
+name: Validate portfolio review queue
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/collect_portfolio.py'
+      - 'tests/test_collect_portfolio.py'
+      - 'docs/APP_PORTFOLIO.md'
+      - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
+      - 'portfolio.html'
+      - '.github/workflows/check-portfolio.yml'
+  push:
+    branches:
+      - 'feat/portfolio-review-checkpoints-20261017'
+    paths:
+      - 'scripts/collect_portfolio.py'
+      - 'tests/test_collect_portfolio.py'
+      - 'docs/APP_PORTFOLIO.md'
+      - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
+      - 'portfolio.html'
+      - '.github/workflows/check-portfolio.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public observation and review semantics
+        run: python3 -m unittest discover -s tests -p 'test_collect_portfolio.py' -v
+      - name: Verify embedded portfolio JavaScript parses
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('portfolio.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          if len(scripts) != 1:
+              raise SystemExit('Expected one embedded portfolio script')
+          Path('/tmp/session-deck-portfolio.js').write_text(scripts[0], encoding='utf-8')
+          PY
+          node --check /tmp/session-deck-portfolio.js
