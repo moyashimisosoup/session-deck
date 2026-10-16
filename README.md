@@ -27,6 +27,13 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - この画面と、架空セッション情報だけを表示する既存デモ画面は独立しています。公開台帳に非公開セッションURL・個人情報を記録しないでください。
 - **収集・公開確認済み（2026-10-17）**：GitHub Actionsの公開データ収集が13/13件成功し、Pagesの [portfolio.html](https://moyashimisosoup.github.io/session-deck/portfolio.html) と [観測JSON](https://moyashimisosoup.github.io/session-deck/data/portfolio-observations.json) で読戻し確認済み。iPhone実機操作は未確認です。
 
+## 更新候補を見失わない「未レビュー」キュー
+
+- [チェックポイント台帳](docs/PORTFOLIO_REVIEW_CHECKPOINTS.json)にAPP-ID別の**初期観測基準**を保持。内容を確認済みと偽らず、前回スキャンの比較とは独立して更新候補を記録します。
+- GitHubのHEADが基準SHAと異なれば[アプリ台帳](portfolio.html)で「未レビュー」と表示し続けます。「差分をGitHubで確認」「検証依頼をコピー」からレビューします。
+- レビュー後、根拠を確かめた担当者がコミットSHAと日時・証跡を更新するまで確認完了とは扱いません。アプリ台帳の開発段階は引き続きMarkdownの手動更新が正本です。
+- 運用手順は[進捗の更新・レビュー基準](docs/PORTFOLIO_OPERATIONS.md)を参照してください。並行するUI改良は別ブランチで行い、同一ファイルの変更を競合確認してから統合します。
+
 ## v0.1で試せること
 
 - ダッシュボード、作業一覧、セッション一覧、引継ぎ記録の切替
