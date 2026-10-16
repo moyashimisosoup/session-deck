@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Session Deck アプリ・ポートフォリオ一覧。GitHub管理台帳を読み込み、開発段階と次の作業を可視化します。">
+  <meta name="theme-color" content="#111c2b">
+  <title>アプリ台帳 | Session Deck</title>
+  <style>
+    :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;color:#1e2633;background:#f6f8fb;--blue:#4868dd;--line:#e3e9f0;--muted:#647184}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh}
+    a{color:inherit}
+    button,input,select{font:inherit}
+    button,input,select{border-radius:10px}
+    :focus-visible{outline:3px solid #91a5f7;outline-offset:3px}
+    .shell{display:grid;grid-template-columns:253px minmax(0,1fr);min-height:100vh}
+    .sidebar{padding:30px 18px;background:#111c2b;color:#c2cee0}
+    .brand{display:block;color:white;font-size:23px;font-weight:800;letter-spacing:-1px;text-decoration:none;margin-bottom:55px}
+    .brand span{color:#9dacf8}
+    .navlabel{font-size:10px;letter-spacing:2px;font-weight:700;color:#75869a;margin:22px 12px 10px}
+    .navitem{display:block;text-decoration:none;padding:13px 15px;border-radius:10px;font-size:13px;color:#a5b6cc}
+    .navitem:hover{background:#1b2b40;color:white}
+    .navitem.active{background:#24334c;color:white;font-weight:700}
+    .privacy{margin-top:35px;padding:13px;border:1px solid #30435a;border-radius:10px;font-size:12px;line-height:1.7}
+    .privacy strong{color:#dbe7f8}
+    .content{min-width:0}
+    .topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:0 clamp(20px,4vw,64px);gap:12px}
+    .crumb{font-size:12px;color:#647184}
+    .crumb strong{color:#1e2633}
+    .source{font-size:12px;color:var(--blue);text-decoration:none;font-weight:700}
+    .main{padding:42px clamp(18px,4vw,64px) 80px;max-width:1480px;margin:auto}
+    .eyebrow{color:var(--blue);font-size:11px;font-weight:800;letter-spacing:2px;margin-bottom:8px}
+    h1{font-size:clamp(26px,3vw,36px);letter-spacing:-.9px;margin:0 0 12px}
+    .intro{color:var(--muted);font-size:14px;line-height:1.9;margin:0;max-width:790px}
+    .meta{font-size:12px;color:#647184;margin:12px 0 26px}
+    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0}
+    .metric{background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+    .metric strong{display:block;font-size:30px;letter-spacing:-1px}
+    .metric span{font-size:12px;color:var(--muted)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:12px;background:white;padding:18px;border:1px solid var(--line);border-radius:14px;margin:20px 0 16px}
+    .search{flex:1;min-width:210px;padding:12px 13px;border:1px solid var(--line);background:#fbfcfe}
+    .filter{padding:12px 13px;background:#fbfcfe;border:1px solid var(--line);min-width:155px}
+    .count{margin:14px 0;color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+    .card{border:1px solid var(--line);border-radius:14px;padding:20px;background:white;box-shadow:0 5px 20px #1e293b08}
+    .cardtop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+    .id{font-size:11px;letter-spacing:.3px;font-weight:800;color:var(--muted)}
+    .tag{font-size:11px;white-space:nowrap;padding:5px 9px;border-radius:99px;background:#eef1ff;color:#425ab2;font-weight:700}
+    .tag.idea{background:#f2f3f5;color:#657184}
+    .tag.publish{background:#e7f7f0;color:#187f61}
+    .tag.design{background:#fff5e4;color:#9a6b18}
+    .card h2{font-size:17px;line-height:1.5;margin:0 0 9px}
+    .status{font-size:12px;color:var(--muted);margin:0 0 12px}
+    .result{font-size:13px;color:#48566a;line-height:1.8;margin:0 0 15px;white-space:normal}
+    .next{padding:13px;border:1px solid #e4eafb;border-radius:10px;background:#f7f9ff;font-size:12px;line-height:1.7}
+    .next strong{color:#445aab}
+    .links{margin-top:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .links a{font-size:12px;color:#4764d2;font-weight:700;text-decoration:none}
+    .source-note{font-size:11px;color:#718096}
+    .error{background:#fff4f0;border:1px solid #efcec6;border-radius:12px;padding:16px;color:#924b36;margin:18px 0}
+    .empty{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;color:var(--muted);text-align:center}
+    [hidden]{display:none!important}
+    @media(max-width:1050px){.shell{grid-template-columns:200px minmax(0,1fr)}.grid{grid-template-columns:1fr}}
+    @media(max-width:700px){.shell{display:block}.sidebar{padding:15px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.brand{font-size:19px;margin:0 auto 0 0}.navlabel,.privacy{display:none}.navitem{padding:9px 12px}.topbar{height:auto;min-height:58px;padding:12px 18px}.main{padding:29px 18px 60px}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:25px}.metric span{font-size:10px}.toolbar{padding:12px}.search,.filter{width:100%;min-width:0}}
+    @media(prefers-reduced-motion:no-preference){.card{transition:border-color .17s,transform .17s}.card:hover{transform:translateY(-2px);border-color:#bdcaff}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" aria-label="ナビゲーション">
+    <a class="brand" href="./index.html">session<span>deck</span></a>
+    <div class="navlabel">WORKSPACE</div>
+    <a class="navitem" href="./index.html">▦　セッション管理デモ</a>
+    <a class="navitem active" aria-current="page" href="./portfolio.html">▤　アプリ台帳</a>
+    <div class="privacy"><strong>この画面は実データの台帳です。</strong><br>GitHubの公開Markdownを読み取る専用画面です。既存の作業・セッションデモには影響しません。自動更新や実サービスの稼働監視は行いません。</div>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div class="crumb">WORKSPACE / <strong>アプリ台帳</strong></div>
+      <a class="source" href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md" target="_blank" rel="noopener noreferrer">GitHub正本 ↗</a>
+    </header>
+    <main class="main">
+      <div class="eyebrow">APP PORTFOLIO</div>
+      <h1>アプリ台帳</h1>
+      <p class="intro">アイデアから公開後の改善まで、複数のアプリを一望するための一覧です。記載内容はGitHubの管理台帳に基づきます。開発段階と「いま稼働中のセッション」は異なる情報です。</p>
+      <p class="meta" id="meta">台帳を読み込んでいます…</p>
+      <section class="metrics" aria-label="アプリ集計">
+        <div class="metric"><strong id="total">—</strong><span>登録アプリ</span></div>
+        <div class="metric"><strong id="repos">—</strong><span>Repo確認済み</span></div>
+        <div class="metric"><strong id="ideas">—</strong><span>構想・未照合</span></div>
+      </section>
+      <div class="toolbar">
+        <input type="search" id="search" class="search" placeholder="名称・課題・次の作業で検索" aria-label="アプリ検索">
+        <select id="stage" class="filter" aria-label="開発段階"><option value="all">すべての開発段階</option><option>構想</option><option>調査・設計</option><option>試作</option><option>限定公開</option><option>運用・改善</option><option>保留</option></select>
+        <select id="group" class="filter" aria-label="登録区分"><option value="all">すべての登録</option><option value="repo">Repo確認済み</option><option value="chat">構想・未照合</option></select>
+      </div>
+      <p class="count" id="count" role="status" aria-live="polite"></p>
+      <div id="error" class="error" role="alert" hidden></div>
+      <section id="cards" class="grid" aria-label="アプリ一覧"></section>
+      <p class="empty" id="empty" hidden>該当するアプリはありません。</p>
+    </main>
+  </div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var data=[];
+  var $=function(id){return document.getElementById(id);};
+  function text(md){return md.replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[\u0060*]/g,'').trim();}
+  function element(tag,cls,value){var e=document.createElement(tag);if(cls)e.className=cls;if(value!==undefined)e.textContent=value;return e;}
+  function sourceLink(cell){var m=cell.match(/\]\((https:\/\/github\.com\/[^)\s]+)\)/);return m?m[1]:null;}
+  function readRows(md){
+    var section='',rows=[];
+    md.split(/\r?\n/).forEach(function(line){
+      if(/^## A\. /.test(line))section='repo';
+      else if(/^## B\. /.test(line))section='chat';
+      else if(/^## C\. /.test(line))section='';
+      if(!section||! /^\|\s*APP-\d{3}\s*\|/.test(line))return;
+      var parts=line.split('|').slice(1,-1).map(function(v){return v.trim();});
+      if(section==='repo'&&parts.length>=6){
+        rows.push({id:parts[0],title:text(parts[1]),stage:text(parts[2]),repo:sourceLink(parts[3]),result:text(parts[4]),next:text(parts[5]),kind:'repo'});
+      }else if(section==='chat'&&parts.length>=5){
+        rows.push({id:parts[0],title:text(parts[1]),stage:text(parts[2]),repo:null,result:text(parts[3]),next:text(parts[4]),kind:'chat'});
+      }
+    });
+    return rows;
+  }
+  function render(){
+    var q=$('search').value.toLocaleLowerCase().trim(), stage=$('stage').value,group=$('group').value;
+    var list=data.filter(function(a){return(stage==='all'||a.stage.split('／')[0]===stage)&&(group==='all'||a.kind===group)&&(!q||[a.id,a.title,a.stage,a.result,a.next].join(' ').toLocaleLowerCase().includes(q));});
+    $('cards').replaceChildren();
+    list.forEach(function(a){
+      var card=element('article','card'),top=element('div','cardtop'),label=element('span','id',a.id),pill=element('span','tag',a.stage.split('／')[0]);
+      if(a.kind==='chat')pill.classList.add('idea');
+      else if(/限定公開|運用/.test(a.stage))pill.classList.add('publish');
+      else if(a.stage.includes('調査'))pill.classList.add('design');
+      top.append(label,pill);
+      card.append(top,element('h2','',a.title),element('p','status',a.stage));
+      card.append(element('p','result',a.result));
+      var next=element('div','next');next.append(element('strong','', 'NEXT　'),document.createTextNode(a.next));card.append(next);
+      var links=element('div','links');
+      if(a.repo){
+        var repo=element('a','', 'GitHubリポジトリ ↗');repo.href=a.repo;repo.target='_blank';repo.rel='noopener noreferrer';links.append(repo);
+      }
+      links.append(element('span','source-note',a.kind==='repo'?'GitHub README等を確認':'会話記録ベース・Repo未照合'));
+      card.append(links);$('cards').append(card);
+    });
+    $('count').textContent=list.length+' 件を表示（台帳全体 '+data.length+' 件）';
+    $('empty').hidden=list.length!==0;
+  }
+  ['search','stage','group'].forEach(function(id){$(id).addEventListener(id==='search'?'input':'change',render);});
+  fetch('./docs/APP_PORTFOLIO.md',{cache:'no-store'})
+    .then(function(res){if(!res.ok)throw new Error('HTTP '+res.status);return res.text();})
+    .then(function(md){
+      data=readRows(md);
+      if(!data.length)throw new Error('台帳のアプリ行を読み取れませんでした。');
+      var m=md.match(/最終台帳更新：(\d{4}-\d{2}-\d{2})/);
+      $('meta').textContent='GitHub台帳の記録日：'+(m?m[1]:'未記載')+' ／ 表示時に公開台帳を読み込み（個別リポジトリの最新状態を自動監視する機能ではありません）';
+      $('total').textContent=String(data.length);
+      $('repos').textContent=String(data.filter(function(x){return x.kind==='repo';}).length);
+      $('ideas').textContent=String(data.filter(function(x){return x.kind==='chat';}).length);
+      render();
+    }).catch(function(error){
+      $('meta').textContent='台帳の読み込みに失敗しました';
+      $('error').hidden=false;
+      $('error').textContent='台帳を取得できませんでした（'+error.message+'）。GitHub正本を開いて確認してください。file:// での直接表示では取得できない場合があります。';
+      $('count').textContent='取得できませんでした';
+    });
+})();
+</script>
+</body>
+</html>
