@@ -33,7 +33,7 @@
 | APP-001 | **Session Deck**：ChatGPT・Claude Code・Codexの作業横断管理 | 試作／検証待ち | [session-deck](https://github.com/moyashimisosoup/session-deck) | 既存v0.1静的デモと、実台帳を表示する[アプリ一覧画面](https://moyashimisosoup.github.io/session-deck/portfolio.html)を追加。2026-10-17にPagesの公開URLで21件（Repo確認13・会話8）表示、Actions [run #3](https://github.com/moyashimisosoup/session-deck/actions/runs/38943748943)成功を確認。実サービス自動連携とiPhone実機確認は未完了 | 実機UI確認とGitHub変更の読取り専用収集・差分提示を設計 |
 | APP-002 | **クロスワード工房**：日本語クロスワードの制作・編集・教材化を目指すWebアプリ | 試作／進行中（M1完了・M2は設計段階） | [crossword-maker](https://github.com/yama-books/crossword-maker) | 6×6・14問のプレイ版、カナ正規化・語枠抽出・盤面検証・JSON正本化を実装。[M1 PR #1](https://github.com/yama-books/crossword-maker/pull/1)マージ・[mainコミット44ae754](https://github.com/yama-books/crossword-maker/commit/44ae754e3e6cf37055b37e2bec9357806bc0db29)、[PR CI](https://github.com/yama-books/crossword-maker/actions/runs/38929606798)で13テスト成功、[Pagesデプロイ](https://github.com/yama-books/crossword-maker/actions/runs/38929716503)成功、[公開サイト](https://yama-books.github.io/crossword-maker/)のHTTP 200・問題表示を2026-10-17に確認。PC/iPhone実機操作・印刷は未確認。別セッションの生成/編集HTML・ZIPは参考資料で主Repo未統合。UIモーション案もGitHub未保存 | 現行の簡潔なUIを維持し、マットなブロック型凸面ボタンと控えめな8bit演出を設計。次はM2手動編集（黒マス・文字・カギ・Undo/Redo・JSON保存）の仕様確定と実装、次いで生成ロジックの選択的統合・実機検証 |
 | APP-003 | **POÈME / ESTATE**：地名から架空の高級マンション広告文を生成 | 限定公開／進行中 | [mansion-poet](https://github.com/yama-books/mansion-poet) | v0.1系Web版とPages公開、地名・地図・OpenPOI生成、回帰テストの記載。v0.1.2安定化中。モバイル実機未検証 | POI分類・通信中断・実機検証を進め、その後UI改良 |
-| APP-004 | **Reverse Planner**：締切から逆算する学習・生活タイマー | 試作／検証待ち | [reverse-planner](https://github.com/yama-books/reverse-planner) | v0.1静的Webコード、逆算計算・タスクタイマー・テスト。PagesはREADME上、設定・配信確認待ち | Pages・スマホ検証、固定予定と再計画の設計 |
+| APP-004 | **Reverse Planner**：時刻・締切日から生活／学習タスクを逆算 | 限定公開／v0.2進行中・検証待ち | [reverse-planner](https://github.com/yama-books/reverse-planner) | **v0.1**：時刻・日割り逆算、編集・完了、タイマー、端末保存/JSON出力。2026-10-17にPagesのHTML・JS HTTP 200とv0.1表示を確認。[公開CI成功](https://github.com/yama-books/reverse-planner/actions/runs/38941776421)。**v0.2**：SOFT PIXEL・4画面導線を[Draft PR #1](https://github.com/yama-books/reverse-planner/pull/1)に保存、[PR CI成功](https://github.com/yama-books/reverse-planner/actions/runs/38945328279)、モック操作10項目通過。未マージ・未公開、実機未検証 | PRのブラウザUI・保存互換・アクセシビリティ検証→マージ判断→v0.2公開・実機検証 |
 | APP-005 | **PDF Works**：Windows向け軽量PDF編集・共通領域切り出し | 試作／検証待ち | [pdf-works](https://github.com/moyashimisosoup/pdf-works) | v5仕様とPySide6 alphaの起動手順・バックエンド試験の記載。PDF表示・ズーム中心、EXEなし。Windows Qt実機未確認 | alpha実機安定性を検証し、回転・削除・共通領域切り出しへ |
 | APP-006 | **soba-price**：そば等の価格史・史料・為替換算 | 調査・設計／未着手 | [soba-price](https://github.com/yama-books/soba-price) | READMEの名称とRepo存在を確認。平安期までの資料調査・年代別価格比較は会話上の計画。データ収録・実装は未確認 | 基礎設計と出典台帳を保存し、歴史資料の信頼度区分を決める |
 | APP-007 | **古典学習帳／百人一首練習帳**：範囲別・段階式の古典学習 | 限定公開／検証待ち | [koten](https://github.com/yama-books/koten) | v0.1.0テスト公開版の説明、穴埋め・作者問題と端末内学習履歴。史料校正・実機検証が残る。旧設計Repoは下記参照 | 異同・読みの校正、実機試験、助動詞問題の設計 |
@@ -46,12 +46,14 @@
 
 **上記の最終根拠確認日：2026-10-17（主に各リポジトリのREADMEを読取）。** 公開URLがREADMEに記載されていても、今回の台帳作成作業で各サイトのHTTP応答・操作を再検証したわけではない。
 
-### 公開先・試験公開先（特記のないものは今回のアクセス再検証なし）
+**APP-004 個別照合（2026-10-17）**：[PR #1](https://github.com/yama-books/reverse-planner/pull/1)／[開発先頭コミット `6566958`](https://github.com/yama-books/reverse-planner/commit/6566958541710988516ca0123f57dcfe4f3f2a0d)／[実装記録](https://github.com/yama-books/reverse-planner/blob/feature/soft-pixel-v02-20261017/docs/V02_IMPLEMENTATION_STATUS.md)／[UI計画](https://github.com/yama-books/reverse-planner/blob/main/docs/UI_V02_PLAN.md)／[モーション仕様](https://github.com/yama-books/reverse-planner/blob/main/docs/MOTION_SPEC_V02.md)。モック操作テストと実機動作は別扱い。
+
+### 公開先・試験公開先（特記のないものは今回のアクセス再検証なし。APP-004は2026-10-17に再確認）
 
 - APP-001: [Session DeckのPages候補](https://moyashimisosoup.github.io/session-deck/)（README上の実URL確認は未完了）
 - APP-002: [クロスワード](https://yama-books.github.io/crossword-maker/)（2026-10-17 HTTP 200・問題表示確認、操作実機検証は未実施）
 - APP-003: [マンションポエム](https://yama-books.github.io/mansion-poet/)（READMEに公開URLでの確認記載あり）
-- APP-004: [Reverse PlannerのPages候補](https://yama-books.github.io/reverse-planner/)（配信確認待ち）
+- APP-004: [Reverse Planner v0.1 公開中](https://yama-books.github.io/reverse-planner/)（2026-10-17にHTML・JS HTTP 200とv0.1画面を確認。v0.2は未公開）
 - APP-008: [怪文回文メーカー](https://yama-books.github.io/kaibun/)
 - APP-009: [Japanese Flash](https://yama-books.github.io/nihongo-apps/)
 - APP-010: [しゅくだいノート](https://moyashimisosoup.github.io/shukudai-notebook/)
