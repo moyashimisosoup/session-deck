@@ -74,3 +74,19 @@
 - RV-06：公開PagesにGitHubの本文・秘密・認証トークンが無いことを確認する（配信後の公開JSON検査）。
 
 **注意**：PRのオフライン試験PASSとPagesの公開・iPhone動作の確認を混同しない。
+
+
+## 視認性重視ポートフォリオUI（2026-10-17）
+
+出典と選定理由は [PORTFOLIO_UI_RESEARCH.md](PORTFOLIO_UI_RESEARCH.md) を参照。
+
+| ID | 判定 | 根拠・不足 |
+| --- | --- | --- |
+| UI-01 | PASS | [PR #3](https://github.com/moyashimisosoup/session-deck/pull/3) をマージ。GitHub Actions [#38974925783](https://github.com/moyashimisosoup/session-deck/actions/runs/38974925783) でGitHub観測の回帰テスト・新UIのJS構文・必須表示フック検査が成功 |
+| UI-02 | PASS | [Pages配信 #38974977545](https://github.com/moyashimisosoup/session-deck/actions/runs/38974977545) が成功。公開 [portfolio.html](https://moyashimisosoup.github.io/session-deck/portfolio.html) がHTTP 200、見出し「アプリの現在地」と21件・13/13件の公開観測・各行の現在地・コミット日時・次の作業のレンダリングを確認 |
+| UI-03 | PASS（実機操作とは別） | 小画面指定でのスクリーンショット取得HTTP 200。CSSに390px/320px向けレイアウトとモーション低減を実装 |
+| UI-04 | 未確認 | 自動ブラウザでのモバイル絞り込み・詳細開閉の操作テストはタイムアウト。検索・並び替え・コピー・タップ操作の完走を確認できていない |
+| UI-05 | 未確認 | ユーザー所有のiPhone/Safariでの操作、横方向オーバーフロー、VoiceOver・キーボード操作、縮小文字の可読性 |
+| UI-06 | PASS（設計・ソース） | コミット日時と「最終AIセッション活動時刻」を混同しないラベル、GitHub未照合と取得失敗を未確認表示、レビュー状態を変更しない読み取り専用UI |
+
+**検証の区別**：PagesのHTTP 200やブラウザ上の描画成功は、iPhone実機のタップ／コピー成功を意味しない。端末で確認した場合は端末、ブラウザ、日時、PASS/FAIL、再現情報を追記する。
