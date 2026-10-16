@@ -105,6 +105,7 @@
         <input type="search" id="search" class="search" placeholder="名称・課題・次の作業で検索" aria-label="アプリ検索">
         <select id="stage" class="filter" aria-label="開発段階"><option value="all">すべての開発段階</option><option>構想</option><option>調査・設計</option><option>試作</option><option>限定公開</option><option>運用・改善</option><option>保留</option></select>
         <select id="group" class="filter" aria-label="登録区分"><option value="all">すべての登録</option><option value="repo">Repo確認済み</option><option value="chat">構想・未照合</option></select>
+        <select id="changeFilter" class="filter" aria-label="GitHub更新状況"><option value="all">GitHub変更：すべて</option><option value="changed">コミット更新あり</option><option value="failed">取得不能・部分失敗</option></select>
       </div>
       <div class="sync" id="obsStatus" role="status" aria-live="polite">GitHubの公開更新情報を読み込み中です。台帳の内容とは別の観測値です。</div>
       <div class="helper-actions">
@@ -147,6 +148,12 @@
   function render(){
     var q=$('search').value.toLocaleLowerCase().trim(), stage=$('stage').value,group=$('group').value;
     var list=data.filter(function(a){return(stage==='all'||a.stage.split('／')[0]===stage)&&(group==='all'||a.kind===group)&&(!q||[a.id,a.title,a.stage,a.result,a.next].join(' ').toLocaleLowerCase().includes(q));});
+    var changeChoice=$('changeFilter').value;
+    if(changeChoice!=='all')list=list.filter(function(a){
+      var obs=observations&&a.repo&&observations[a.repo.replace('https://github.com/','')];
+      if(!obs)return false;
+      return changeChoice==='changed'?obs.comparison==='changed':(obs.fetch_status==='error'||obs.fetch_status==='partial'||obs.fetch_status==='not_public');
+    });
     $('cards').replaceChildren();
     list.forEach(function(a){
       var card=element('article','card'),top=element('div','cardtop'),label=element('span','id',a.id),pill=element('span','tag',a.stage.split('／')[0]);
@@ -207,7 +214,7 @@
     $('count').textContent=list.length+' 件を表示（台帳全体 '+data.length+' 件）';
     $('empty').hidden=list.length!==0;
   }
-  ['search','stage','group'].forEach(function(id){$(id).addEventListener(id==='search'?'input':'change',render);});
+  ['search','stage','group','changeFilter'].forEach(function(id){$(id).addEventListener(id==='search'?'input':'change',render);});
   $('copyIntake').addEventListener('click',function(){
     var prompt='このアプリを「アプリ思いつき作成」の全体台帳と照合します。新規実装はせず、①正本GitHub Repo ②実装済・検証済・公開済を分離した現在地 ③最新コミット・PR・CI等の根拠URL ④GitHub未保存の成果 ⑤未完了と次の一手を簡潔に報告してください。未確認は未確認と明記してください。重要な状態変化時のみ記録します。中央台帳 https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md を最新確認し、更新できなければ未反映メモを出してください。';
     if(!navigator.clipboard||!navigator.clipboard.writeText){$('obsStatus').textContent='コピー機能が利用できません。運用手順の初回棚卸し依頼を使用してください。';return;}
@@ -223,7 +230,12 @@
       });
       var changed=snapshot.repositories.filter(function(x){return x.comparison==='changed';}).length;
       var errors=snapshot.repositories.filter(function(x){return x.fetch_status==='error'||x.fetch_status==='not_public';}).length;
-      $('obsStatus').textContent='GitHub公開情報の最終収集：'+(snapshot.generated_at||'未確認')+' ／ Repo観測 '+snapshot.usable_count+'/'+snapshot.repo_count+'件 ／ 前回収集からコミット変更 '+changed+'件 ／ 取得不能 '+errors+'件。変更は台帳へ自動反映しません。週1回・台帳更新時・手動実行時に再収集します。';
+      var scanDate=snapshot.generated_at?new Date(snapshot.generated_at):null;
+      var dateOkay=scanDate&&Number.isFinite(scanDate.getTime());
+      var jpTime=dateOkay?new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(scanDate):'未確認';
+      var age=dateOkay?(Date.now()-scanDate.getTime())/86400000:Infinity;
+      var stale=age>10?' ／ ⚠ 収集から10日以上経過。Actionsを確認してください。':'';
+      $('obsStatus').textContent='GitHub公開情報の最終収集：'+jpTime+' JST ／ Repo観測 '+snapshot.usable_count+'/'+snapshot.repo_count+'件 ／ 前回収集からコミット変更 '+changed+'件 ／ 取得不能 '+errors+'件'+stale+'。変更は台帳へ自動反映しません。週1回・台帳更新時・手動実行時に再収集します。';
       if(data.length)render();
     }).catch(function(){
       $('obsStatus').textContent='GitHub公開情報の観測結果は未配信または取得不能です。台帳は引き続き閲覧できます。最新の収集状況はGitHub Actionsで確認してください。';
