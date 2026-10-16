@@ -8,9 +8,14 @@ on:
       - styles.css
       - app.js
       - portfolio.html
+      - scripts/collect_portfolio.py
+      - tests/test_collect_portfolio.py
       - docs/APP_PORTFOLIO.md
       - .github/workflows/deploy-pages.yml
   workflow_dispatch:
+  schedule:
+    # Every Monday at 10:17 Asia/Tokyo (01:17 UTC); scheduling can be delayed.
+    - cron: '17 1 * * 1'
 
 permissions:
   contents: read
@@ -25,6 +30,7 @@ jobs:
   deploy:
     name: Publish static demo
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -45,6 +51,18 @@ jobs:
           test -s _site/portfolio.html
           test -s _site/docs/APP_PORTFOLIO.md
           touch _site/.nojekyll
+
+      - name: Run offline public observer tests
+        run: python3 -m unittest discover -s tests -p 'test_collect_portfolio.py' -v
+
+      - name: Collect only public GitHub metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/collect_portfolio.py \
+            --ledger docs/APP_PORTFOLIO.md \
+            --output _site/data/portfolio-observations.json
+          test -s _site/data/portfolio-observations.json
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
