@@ -9,7 +9,8 @@ const opt=flag=>{const i=argv.indexOf(flag);return i<0?null:argv[i+1];};
 const repository=opt('--repo') || 'moyashimisosoup/session-deck';
 const fixture=opt('--fixture');
 const limit=Number(opt('--limit') || 5);
-if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)||!Number.isInteger(limit)||limit<1||limit>20){
+const [owner,name]=repository.split('/');
+if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)||['.','..'].includes(owner)||['.','..'].includes(name)||!Number.isInteger(limit)||limit<1||limit>20){
   throw Error('Usage: --repo owner/repository [--limit 1..20] [--fixture path]');
 }
 const base='https://api.github.com/repos/'+repository;
