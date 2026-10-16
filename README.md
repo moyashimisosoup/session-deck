@@ -18,6 +18,15 @@ python -m http.server 8000
 
 GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → Source: GitHub Actions` を使用します。`main` のWebアプリ本体（`index.html` / `styles.css` / `app.js`）または `.github/workflows/deploy-pages.yml` を更新すると、[Deploy Session Deck to GitHub Pages](../../actions/workflows/deploy-pages.yml) がGitHubホストのUbuntu上で走り、**静的デモの3ファイルだけ**をPagesに配信します。手動実行（workflow_dispatch）も可能です。公開URL: https://moyashimisosoup.github.io/session-deck/ 。**ワークフローの成功と実URLでの読み戻しの両方で配信を検証してください。**
 
+## アプリ台帳（実データの読取り専用画面）
+
+- [アプリ台帳を開く](portfolio.html) ／ [台帳の正本](docs/APP_PORTFOLIO.md)
+- 実際のアプリ登録内容を、GitHubの公開Markdownから画面表示時に読み込みます。名称・段階・次の作業で検索し、Repo確認済みと会話ベースの構想を絞り込めます。
+- **台帳は手動・節目更新が基本**。他リポジトリやチャットの進捗を自動収集する機能は未実装です。ブラウザからの編集・GitHubへの自動書込みもしません。
+- [初回の吸い上げ・今後の更新ルール](docs/PORTFOLIO_OPERATIONS.md)
+- この画面と、架空セッション情報だけを表示する既存デモ画面は独立しています。公開台帳に非公開セッションURL・個人情報を記録しないでください。
+- GitHub Pagesは`portfolio.html`と`docs/APP_PORTFOLIO.md`を静的に配信します。配信確認・スマホ実機検証は別途必要です。
+
 ## v0.1で試せること
 
 - ダッシュボード、作業一覧、セッション一覧、引継ぎ記録の切替
