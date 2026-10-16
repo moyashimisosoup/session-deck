@@ -8,6 +8,8 @@ on:
       - 'docs/APP_PORTFOLIO.md'
       - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
       - 'portfolio.html'
+      - 'portfolio-ui.css'
+      - 'portfolio-ui.js'
       - '.github/workflows/check-portfolio.yml'
   push:
     branches:
@@ -31,15 +33,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify public observation and review semantics
         run: python3 -m unittest discover -s tests -p 'test_collect_portfolio.py' -v
-      - name: Verify embedded portfolio JavaScript parses
+      - name: Validate external UI JavaScript and accessibility hooks
         run: |
+          node --check portfolio-ui.js
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          html = Path('portfolio.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
-          if len(scripts) != 1:
-              raise SystemExit('Expected one embedded portfolio script')
-          Path('/tmp/session-deck-portfolio.js').write_text(scripts[0], encoding='utf-8')
+          html=Path('portfolio.html').read_text(encoding='utf-8')
+          script=Path('portfolio-ui.js').read_text(encoding='utf-8')
+          css=Path('portfolio-ui.css').read_text(encoding='utf-8')
+          required=['id="list"','id="syncStatus"','id="pendingCount"','id="copyIntake"','id="stage"','id="sort"','id="search"']
+          missing=[x for x in required if x not in html]
+          if missing:
+              raise SystemExit('Missing UI hooks: '+repr(missing))
+          if 'portfolio-ui.js' not in html or 'portfolio-ui.css' not in html:
+              raise SystemExit('External UI assets not loaded')
+          if 'lastMovement' not in script or 'statusOf' not in script or 'app.next' not in script:
+              raise SystemExit('Three-column content contract missing')
+          if '@media(max-width:720px)' not in css or 'prefers-reduced-motion' not in css:
+              raise SystemExit('Mobile or reduced-motion support missing')
           PY
-          node --check /tmp/session-deck-portfolio.js
