@@ -48,6 +48,7 @@
     .observed strong{color:#28427b}
     .observed.changed{border-top-color:#ddbf82}
     .observed.changed strong{color:#8b5e1e}
+    .review-copy{display:block;margin-top:8px;border:1px solid #d8c59a;background:#fffdf7;color:#815c2d;padding:8px 11px;cursor:pointer;font-size:12px;font-weight:700}
     .observed.error strong{color:#a84940}
     .helper-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
     .helper-actions button{border:1px solid #c4d0e5;background:#fff;color:#3553a4;cursor:pointer;padding:10px 13px;font-weight:700}
@@ -172,6 +173,15 @@
             if(obs.comparison==='changed'){
               o.classList.add('changed');
               o.append(element('strong','', '● 前回収集からコミット更新あり（台帳反映は未判定）'));
+              if(obs.commit&&obs.commit.sha&&navigator.clipboard&&navigator.clipboard.writeText){
+                var reviewButton=element('button','review-copy','この差分の検証依頼をコピー');
+                reviewButton.type='button';
+                reviewButton.addEventListener('click',function(){
+                  var message='アプリ台帳の更新候補を検証してください。APP-ID: '+a.id+'。GitHub Repo: '+a.repo+'。観測済みコミット: '+obs.commit.sha+'。前回観測コミット: '+(obs.previous_sha||'不明')+'。このコミットだけで完成・公開と断定せず、個別RepoのREADME・PR・CI・公開URL等を読み、重要な状態変化が確認できたときだけ中央台帳 docs/APP_PORTFOLIO.md の該当APP-IDを差分更新してください。証拠が不足する場合は未確認と報告してください。';
+                  navigator.clipboard.writeText(message).then(function(){reviewButton.textContent='検証依頼をコピーしました ✓';}).catch(function(){reviewButton.textContent='コピーできませんでした';});
+                });
+                o.append(reviewButton);
+              }
             }else if(obs.comparison==='unchanged'){
               o.append(element('strong','', 'GitHub観測：前回収集からコミット変更なし'));
             }else if(obs.comparison==='baseline'){
