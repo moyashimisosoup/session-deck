@@ -304,5 +304,31 @@
     }
     renderSync();
   }
+  // Read-only navigation API for command palette and keyboard enhancements.
+  // Deliberately exposes no GitHub mutation or private session data.
+  window.SessionDeckPortfolio={
+    getApps:()=>state.apps.map(a=>({id:a.id,name:a.name,stage:a.stage,source:a.source})),
+    focusApp:(id)=>{
+      if(!state.apps.some(a=>a.id===id))return false;
+      state.quick='all';
+      $('stage').value='all';
+      $('search').value='';
+      draw();
+      const row=Array.from(document.querySelectorAll('.app-row')).find(x=>x.dataset.appId===id);
+      if(!row)return false;
+      row.open=true;
+      row.scrollIntoView({block:'center',behavior:'auto'});
+      row.querySelector('summary')?.focus({preventScroll:true});
+      return true;
+    },
+    setView:(view)=>{
+      if(!['all','review','active','ideas'].includes(view))return false;
+      state.quick=view;
+      $('stage').value='all';$('search').value='';
+      draw();
+      document.querySelector('.list-panel')?.scrollIntoView({block:'start',behavior:'auto'});
+      return true;
+    }
+  };
   start().catch(error=>{console.error('Portfolio UI initialization failed',error);$('loadError').hidden=false;renderSync();});
 })();

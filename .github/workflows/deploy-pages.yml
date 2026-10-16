@@ -12,6 +12,8 @@ on:
       - portfolio.html
       - portfolio-ui.css
       - portfolio-ui.js
+      - portfolio-polish.css
+      - portfolio-shortcuts.js
       - scripts/collect_portfolio.py
       - tests/test_collect_portfolio.py
       - docs/APP_PORTFOLIO.md
@@ -47,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          cp index.html styles.css app.js motion.css motion.js portfolio.html portfolio-ui.css portfolio-ui.js _site/
+          cp index.html styles.css app.js motion.css motion.js portfolio.html portfolio-ui.css portfolio-ui.js portfolio-polish.css portfolio-shortcuts.js _site/
           mkdir -p _site/docs
           cp docs/APP_PORTFOLIO.md _site/docs/
           test -s _site/index.html
@@ -58,6 +60,8 @@ jobs:
           test -s _site/portfolio.html
           test -s _site/portfolio-ui.css
           test -s _site/portfolio-ui.js
+          test -s _site/portfolio-polish.css
+          test -s _site/portfolio-shortcuts.js
           test -s _site/docs/APP_PORTFOLIO.md
           touch _site/.nojekyll
 
