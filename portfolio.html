@@ -42,6 +42,17 @@
     .search{flex:1;min-width:210px;padding:12px 13px;border:1px solid var(--line);background:#fbfcfe}
     .filter{padding:12px 13px;background:#fbfcfe;border:1px solid var(--line);min-width:155px}
     .count{margin:14px 0;color:var(--muted);font-size:12px}
+    .sync{border:1px solid #dfe8f4;background:#eef3fb;color:#3e597d;border-radius:12px;padding:13px 16px;font-size:12px;line-height:1.8;margin:12px 0 17px}
+    .sync a{color:#395fbc}
+    .observed{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;font-size:12px;color:#526477;line-height:1.8}
+    .observed strong{color:#28427b}
+    .observed.changed{border-top-color:#ddbf82}
+    .observed.changed strong{color:#8b5e1e}
+    .observed.error strong{color:#a84940}
+    .helper-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .helper-actions button{border:1px solid #c4d0e5;background:#fff;color:#3553a4;cursor:pointer;padding:10px 13px;font-weight:700}
+    .helper-actions button:hover{background:#eef1ff}
+    .helper-actions a{font-size:12px;color:#4361b6;text-decoration:none}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
     .card{border:1px solid var(--line);border-radius:14px;padding:20px;background:white;box-shadow:0 5px 20px #1e293b08}
     .cardtop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
@@ -78,7 +89,7 @@
   <div class="content">
     <header class="topbar">
       <div class="crumb">WORKSPACE / <strong>アプリ台帳</strong></div>
-      <a class="source" href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md" target="_blank" rel="noopener noreferrer">GitHub正本 ↗</a>
+      <a class="source" href="https://github.com/moyashimisosoup/session-deck/actions/workflows/deploy-pages.yml" target="_blank" rel="noopener noreferrer">収集を手動実行 ↗</a>
     </header>
     <main class="main">
       <div class="eyebrow">APP PORTFOLIO</div>
@@ -95,6 +106,12 @@
         <select id="stage" class="filter" aria-label="開発段階"><option value="all">すべての開発段階</option><option>構想</option><option>調査・設計</option><option>試作</option><option>限定公開</option><option>運用・改善</option><option>保留</option></select>
         <select id="group" class="filter" aria-label="登録区分"><option value="all">すべての登録</option><option value="repo">Repo確認済み</option><option value="chat">構想・未照合</option></select>
       </div>
+      <div class="sync" id="obsStatus" role="status" aria-live="polite">GitHubの公開更新情報を読み込み中です。台帳の内容とは別の観測値です。</div>
+      <div class="helper-actions">
+        <button type="button" id="copyIntake">既存の開発チャットへの棚卸し指示をコピー</button>
+        <a href="./docs/APP_PORTFOLIO.md" target="_blank" rel="noopener noreferrer">台帳Markdown ↗</a>
+        <a href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/PORTFOLIO_OPERATIONS.md" target="_blank" rel="noopener noreferrer">運用手順 ↗</a>
+      </div>
       <p class="count" id="count" role="status" aria-live="polite"></p>
       <div id="error" class="error" role="alert" hidden></div>
       <section id="cards" class="grid" aria-label="アプリ一覧"></section>
@@ -106,6 +123,7 @@
 (function(){
   'use strict';
   var data=[];
+  var observations=null;
   var $=function(id){return document.getElementById(id);};
   function text(md){return md.replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[\u0060*]/g,'').trim();}
   function element(tag,cls,value){var e=document.createElement(tag);if(cls)e.className=cls;if(value!==undefined)e.textContent=value;return e;}
@@ -138,6 +156,46 @@
       top.append(label,pill);
       card.append(top,element('h2','',a.title),element('p','status',a.stage));
       card.append(element('p','result',a.result));
+      if(a.repo){
+        var slug=a.repo.replace('https://github.com/','');
+        var obs=observations&&observations[slug];
+        if(obs){
+          var o=element('div','observed'),state=obs.fetch_status;
+          if(state==='ok'||state==='partial'){
+            if(obs.comparison==='changed'){
+              o.classList.add('changed');
+              o.append(element('strong','', '● 前回収集からコミット更新あり（台帳反映は未判定）'));
+            }else if(obs.comparison==='unchanged'){
+              o.append(element('strong','', 'GitHub観測：前回収集からコミット変更なし'));
+            }else if(obs.comparison==='baseline'){
+              o.append(element('strong','', 'GitHub観測：初回基準データ'));
+            }else{
+              o.append(element('strong','', 'GitHub観測：比較元がなく変化は未判定'));
+            }
+            if(obs.commit&&obs.commit.sha){
+              var comm=element('a','', '　'+obs.commit.sha.slice(0,9)+' ↗');
+              if(obs.commit.url&&obs.commit.url.indexOf('https://github.com/')===0){comm.href=obs.commit.url;comm.target='_blank';comm.rel='noopener noreferrer';o.append(comm);}
+            }
+            var ci='CI：未取得／未実行';
+            if(obs.workflow){
+              ci=obs.workflow.matches_latest_commit?('直近コミットのActions：'+(obs.workflow.conclusion||obs.workflow.status||'未確認')):'Actionsの最新実行は別コミット（現行HEADのCI結果は未確認）';
+            }
+            o.append(element('div','',ci));
+            if(state==='partial')o.append(element('div','','一部の公開情報を取得できませんでした。'));
+            if((obs.pull_requests||[]).length||(obs.issues||[]).length){
+              var groups=[];
+              if((obs.pull_requests||[]).length)groups.push('未完了PR '+obs.pull_requests.map(function(x){return '#'+x.number;}).join('、'));
+              if((obs.issues||[]).length)groups.push('未完了Issue '+obs.issues.map(function(x){return '#'+x.number;}).join('、'));
+              o.append(element('div','',groups.join(' ／ ')+'（直近サンプル・総数ではありません）'));
+            }
+          }else{
+            o.classList.add('error');
+            o.append(element('strong','', 'GitHub観測：取得不可。進捗状態は変更しません'));
+            o.append(element('div','',obs.error_code||'取得元を確認してください'));
+          }
+          card.append(o);
+        }
+      }
       var next=element('div','next');next.append(element('strong','', 'NEXT　'),document.createTextNode(a.next));card.append(next);
       var links=element('div','links');
       if(a.repo){
@@ -150,13 +208,33 @@
     $('empty').hidden=list.length!==0;
   }
   ['search','stage','group'].forEach(function(id){$(id).addEventListener(id==='search'?'input':'change',render);});
+  $('copyIntake').addEventListener('click',function(){
+    var prompt='このアプリを「アプリ思いつき作成」の全体台帳と照合します。新規実装はせず、①正本GitHub Repo ②実装済・検証済・公開済を分離した現在地 ③最新コミット・PR・CI等の根拠URL ④GitHub未保存の成果 ⑤未完了と次の一手を簡潔に報告してください。未確認は未確認と明記してください。重要な状態変化時のみ記録します。中央台帳 https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md を最新確認し、更新できなければ未反映メモを出してください。';
+    if(!navigator.clipboard||!navigator.clipboard.writeText){$('obsStatus').textContent='コピー機能が利用できません。運用手順の初回棚卸し依頼を使用してください。';return;}
+    navigator.clipboard.writeText(prompt).then(function(){$('copyIntake').textContent='コピーしました ✓';}).catch(function(){$('copyIntake').textContent='コピーできませんでした';});
+  });
+  fetch('./data/portfolio-observations.json',{cache:'no-store'})
+    .then(function(res){if(!res.ok)throw new Error('HTTP '+res.status);return res.json();})
+    .then(function(snapshot){
+      if(snapshot.schema_version!==1||snapshot.classification!=='public_repository_metadata_only'||!Array.isArray(snapshot.repositories))throw new Error('形式が一致しません');
+      observations={};
+      snapshot.repositories.forEach(function(r){
+        if(r&&typeof r.repo==='string'&&/^([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)$/.test(r.repo)&&typeof r.app_id==='string')observations[r.repo]=r;
+      });
+      var changed=snapshot.repositories.filter(function(x){return x.comparison==='changed';}).length;
+      var errors=snapshot.repositories.filter(function(x){return x.fetch_status==='error'||x.fetch_status==='not_public';}).length;
+      $('obsStatus').textContent='GitHub公開情報の最終収集：'+(snapshot.generated_at||'未確認')+' ／ Repo観測 '+snapshot.usable_count+'/'+snapshot.repo_count+'件 ／ 前回収集からコミット変更 '+changed+'件 ／ 取得不能 '+errors+'件。変更は台帳へ自動反映しません。週1回・台帳更新時・手動実行時に再収集します。';
+      if(data.length)render();
+    }).catch(function(){
+      $('obsStatus').textContent='GitHub公開情報の観測結果は未配信または取得不能です。台帳は引き続き閲覧できます。最新の収集状況はGitHub Actionsで確認してください。';
+    });
   fetch('./docs/APP_PORTFOLIO.md',{cache:'no-store'})
     .then(function(res){if(!res.ok)throw new Error('HTTP '+res.status);return res.text();})
     .then(function(md){
       data=readRows(md);
       if(!data.length)throw new Error('台帳のアプリ行を読み取れませんでした。');
       var m=md.match(/最終台帳更新：(\d{4}-\d{2}-\d{2})/);
-      $('meta').textContent='GitHub台帳の記録日：'+(m?m[1]:'未記載')+' ／ 表示時に公開台帳を読み込み（個別リポジトリの最新状態を自動監視する機能ではありません）';
+      $('meta').textContent='台帳更新日：'+(m?m[1]:'未記載')+' ／ GitHubの公開観測データは別枠表示です';
       $('total').textContent=String(data.length);
       $('repos').textContent=String(data.filter(function(x){return x.kind==='repo';}).length);
       $('ideas').textContent=String(data.filter(function(x){return x.kind==='chat';}).length);
