@@ -101,6 +101,65 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(1, r["usable_count"])
         self.assertEqual(1, len(r["repositories"]))
 
+    def test_review_baseline_does_not_claim_review(self):
+        record = {"app_id": "APP-001", "repo": "moyashimisosoup/session-deck", "commit": {"sha": SHA_1}}
+        checkpoints = {"APP-001": {"repo": "moyashimisosoup/session-deck", "anchor_sha": SHA_1, "anchor_kind": "bootstrap"}}
+        collector.annotate_review(record, checkpoints)
+        self.assertEqual("baseline", record["review_status"])
+
+    def test_pending_stays_pending_across_multiple_observations(self):
+        checkpoints = {"APP-001": {"repo": "moyashimisosoup/session-deck", "anchor_sha": SHA_1, "anchor_kind": "bootstrap"}}
+        for _ in range(3):
+            result = collector.fetch_one(collector.parse_ledger(LEDGER)[0], {"moyashimisosoup/session-deck": {"commit": {"sha": SHA_2}}}, DATE)
+            collector.annotate_review(result, checkpoints)
+            self.assertEqual("unchanged", result["comparison"])
+            self.assertEqual("pending", result["review_status"])
+            self.assertIn(SHA_1 + "..." + SHA_2, result["review_compare_url"])
+
+    def test_explicit_review_clears_pending(self):
+        record = {"app_id": "APP-001", "repo": "moyashimisosoup/session-deck", "commit": {"sha": SHA_2}}
+        collector.annotate_review(record, {"APP-001": {"repo": record["repo"], "anchor_sha": SHA_2, "anchor_kind": "reviewed"}})
+        self.assertEqual("reviewed", record["review_status"])
+
+    def test_unknown_app_is_not_auto_reviewed(self):
+        record = {"app_id": "APP-001", "repo": "moyashimisosoup/session-deck", "commit": {"sha": SHA_2}}
+        collector.annotate_review(record, {})
+        self.assertEqual("untracked", record["review_status"])
+
+    def test_source_failure_does_not_clear_review(self):
+        record = {"app_id": "APP-001", "repo": "moyashimisosoup/session-deck", "commit": None}
+        collector.annotate_review(record, {"APP-001": {"anchor_sha": SHA_1, "anchor_kind": "bootstrap"}})
+        self.assertEqual("unavailable", record["review_status"])
+
+    def test_review_checkpoint_validates_ledger_identity_and_evidence(self):
+        import json
+        from tempfile import TemporaryDirectory
+        doc = {"schema_version": 1, "checkpoints": [
+            {"app_id": "APP-001", "repo": "moyashimisosoup/session-deck", "anchor_sha": SHA_1, "anchor_kind": "bootstrap"}
+        ]}
+        with TemporaryDirectory() as directory:
+            file = Path(directory) / "checkpoints.json"
+            file.write_text(json.dumps(doc), encoding="utf-8")
+            parsed = collector.load_review_checkpoints(file, collector.parse_ledger(LEDGER))
+            self.assertEqual(SHA_1, parsed["APP-001"]["anchor_sha"])
+            doc["checkpoints"][0]["repo"] = "moyashimisosoup/another"
+            file.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertRaises(ValueError, collector.load_review_checkpoints, file, collector.parse_ledger(LEDGER))
+            doc["checkpoints"][0]["repo"] = "moyashimisosoup/session-deck"
+            doc["checkpoints"][0]["anchor_kind"] = "reviewed"
+            file.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertRaises(ValueError, collector.load_review_checkpoints, file, collector.parse_ledger(LEDGER))
+            doc["checkpoints"][0]["reviewed_at"] = DATE
+            doc["checkpoints"][0]["evidence_url"] = "https://github.com/moyashimisosoup/session-deck/commit/" + SHA_1
+            file.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertEqual("reviewed", collector.load_review_checkpoints(file, collector.parse_ledger(LEDGER))["APP-001"]["anchor_kind"])
+
+    def test_full_checkpoint_manifest_aligns_to_all_13_apps(self):
+        apps = collector.parse_ledger((ROOT / "docs" / "APP_PORTFOLIO.md").read_text(encoding="utf-8"))
+        checkpoints = collector.load_review_checkpoints(ROOT / "docs" / "PORTFOLIO_REVIEW_CHECKPOINTS.json", apps)
+        self.assertEqual(13, len(checkpoints))
+        self.assertEqual(set(app["app_id"] for app in apps), set(checkpoints))
+
 
 if __name__ == "__main__":
     unittest.main()
