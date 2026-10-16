@@ -49,6 +49,8 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 今後の優先順位、実装フェーズと完了条件 |
 | [docs/INTEGRATION_PLAN.md](docs/INTEGRATION_PLAN.md) | 外部連携、安全境界、データの公開・非公開 |
 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | 実機・ブラウザ・安全性の検証計画 |
+| [docs/REAL_DATA_INGESTION_PLAN.md](docs/REAL_DATA_INGESTION_PLAN.md) | 実データの安全な収集・正規化・保管・接続ロードマップ |
+| [docs/UI_MOTION_DESIGN.md](docs/UI_MOTION_DESIGN.md) | 参照ライブラリ比較、画面ごとのアニメーション仕様、性能・操作性テスト |
 
 ## 次の段階
 
@@ -56,5 +58,7 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 2. GitHub Pagesで公開する場合は設定と実URLを確認する。
 3. 非公開データ管理の方式を決め、作業IDとセッションIDのスキーマを確定する。
 4. GitHub読取り連携、Claude Code / Codexの既存監視出力との接続、ChatGPT拡張連携を順次検証する。
+
+実データ連携は[取り込み計画](docs/REAL_DATA_INGESTION_PLAN.md)、UIの小気味よい動きは[モーション設計](docs/UI_MOTION_DESIGN.md)に段階的実装の条件を記しました。**両方とも現在は計画書であり、実データ取得・追加アニメーションはまだ実装していません。**
 
 より詳しくは[開発ロードマップ](docs/ROADMAP.md)を参照してください。TradingSystemの運用正本や権限境界を、このリポジトリが変更することはありません。
