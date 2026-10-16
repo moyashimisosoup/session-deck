@@ -1,0 +1,41 @@
+{
+  "issues": [
+    {
+      "number": 3,
+      "state": "open",
+      "title": "Example issue",
+      "html_url": "https://github.com/example/demo/issues/3",
+      "updated_at": "2026-10-17T00:00:00Z",
+      "body": "hidden fixture field"
+    },
+    {
+      "number": 4,
+      "pull_request": {},
+      "title": "Mirrored PR"
+    }
+  ],
+  "pulls": [
+    {
+      "number": 4,
+      "state": "open",
+      "title": "Example PR",
+      "html_url": "https://github.com/example/demo/pull/4",
+      "updated_at": "2026-10-17T00:00:00Z",
+      "body": "hidden fixture field"
+    }
+  ],
+  "workflow_runs": {
+    "workflow_runs": [
+      {
+        "id": 123,
+        "name": "Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "abc123",
+        "html_url": "https://github.com/example/demo/actions/runs/123",
+        "updated_at": "2026-10-17T00:00:00Z",
+        "logs": "hidden fixture field"
+      }
+    ]
+  }
+}

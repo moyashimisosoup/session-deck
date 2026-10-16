@@ -1,0 +1,22 @@
+/* Optional Session Deck motion tokens. */
+:root {
+  --sd-motion-instant: 80ms;
+  --sd-motion-fast: 130ms;
+  --sd-motion-normal: 200ms;
+  --sd-motion-panel: 260ms;
+  --sd-motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .work-card, .session-card { transition: transform var(--sd-motion-fast) var(--sd-motion-ease), border-color var(--sd-motion-fast) ease; }
+  .work-card:hover, .session-card:hover { transform: translateY(-2px); }
+}
+.primary-button, .secondary-button, .header-action, .nav-item, .project-button {
+  transition: background-color var(--sd-motion-fast) ease, border-color var(--sd-motion-fast) ease, transform var(--sd-motion-instant) ease;
+}
+.primary-button:active, .secondary-button:active, .header-action:active, .nav-item:active, .project-button:active {
+  transform: scale(.985);
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-card, .session-card, .primary-button, .secondary-button, .header-action, .nav-item, .project-button { transition: none !important; }
+  .work-card:hover, .session-card:hover { transform: none; }
+}
