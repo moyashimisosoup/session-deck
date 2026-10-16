@@ -42,7 +42,7 @@
   setTheme(safeStorageGet()||'dark',false);
   themeToggle.addEventListener('click',toggleTheme);
   function isTyping(el){
-    return !!(el && (el.matches('input,textarea,select,[contenteditable="true"]')||el.closest('[contenteditable="true"]')));
+    return !!(el && typeof el.matches==='function' && (el.matches('input,textarea,select,[contenteditable="true"]')||el.closest('[contenteditable="true"]')));
   }
   function allRows(){
     return Array.from(document.querySelectorAll('.app-row'));
@@ -175,6 +175,8 @@
       e.preventDefault();moveSelection(-1);return;
     }
     if(e.key==='Enter' && selectedRow?.isConnected){
+      // Keep the browser's normal Enter behavior for links, buttons and summaries.
+      if(e.target && typeof e.target.closest==='function' && e.target.closest('a,button,summary,[role="button"]'))return;
       e.preventDefault();
       const sum=selectedRow.querySelector('summary');
       if(sum){sum.click();sum.focus({preventScroll:true});}
