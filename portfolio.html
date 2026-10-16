@@ -34,10 +34,16 @@
     h1{font-size:clamp(26px,3vw,36px);letter-spacing:-.9px;margin:0 0 12px}
     .intro{color:var(--muted);font-size:14px;line-height:1.9;margin:0;max-width:790px}
     .meta{font-size:12px;color:#647184;margin:12px 0 26px}
-    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:26px 0}
     .metric{background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
     .metric strong{display:block;font-size:30px;letter-spacing:-1px}
     .metric span{font-size:12px;color:var(--muted)}
+    .metric.actionable{border-color:#d6bc83;background:#fffdf7}
+    .metric.actionable strong{color:#8b5e1e}
+    .metric.metric-click{cursor:pointer;text-align:left}
+    .metric.metric-click:hover{border-color:#b9a06d;box-shadow:0 4px 15px #443b1920}
+    .review-link{display:inline-flex;padding:5px 0;color:#3e5eb2;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+    @media(prefers-reduced-motion:reduce){.card{transition:none!important;transform:none!important}*{scroll-behavior:auto!important}}
     .toolbar{display:flex;flex-wrap:wrap;gap:12px;background:white;padding:18px;border:1px solid var(--line);border-radius:14px;margin:20px 0 16px}
     .search{flex:1;min-width:210px;padding:12px 13px;border:1px solid var(--line);background:#fbfcfe}
     .filter{padding:12px 13px;background:#fbfcfe;border:1px solid var(--line);min-width:155px}
@@ -74,7 +80,7 @@
     .empty{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;color:var(--muted);text-align:center}
     [hidden]{display:none!important}
     @media(max-width:1050px){.shell{grid-template-columns:200px minmax(0,1fr)}.grid{grid-template-columns:1fr}}
-    @media(max-width:700px){.shell{display:block}.sidebar{padding:15px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.brand{font-size:19px;margin:0 auto 0 0}.navlabel,.privacy{display:none}.navitem{padding:9px 12px}.topbar{height:auto;min-height:58px;padding:12px 18px}.main{padding:29px 18px 60px}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:25px}.metric span{font-size:10px}.toolbar{padding:12px}.search,.filter{width:100%;min-width:0}}
+    @media(max-width:700px){.shell{display:block}.sidebar{padding:15px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.brand{font-size:19px;margin:0 auto 0 0}.navlabel,.privacy{display:none}.navitem{padding:9px 12px}.topbar{height:auto;min-height:58px;padding:12px 18px}.main{padding:29px 18px 60px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:13px}.metric strong{font-size:25px}.metric span{font-size:10px}.toolbar{padding:12px}.search,.filter{width:100%;min-width:0}}
     @media(prefers-reduced-motion:no-preference){.card{transition:border-color .17s,transform .17s}.card:hover{transform:translateY(-2px);border-color:#bdcaff}}
   </style>
 </head>
@@ -101,12 +107,13 @@
         <div class="metric"><strong id="total">—</strong><span>登録アプリ</span></div>
         <div class="metric"><strong id="repos">—</strong><span>Repo確認済み</span></div>
         <div class="metric"><strong id="ideas">—</strong><span>構想・未照合</span></div>
+        <button class="metric actionable metric-click" type="button" id="pendingJump" title="未レビューの更新候補だけ表示"><strong id="pendingCount">—</strong><span>未レビュー更新 ↗</span></button>
       </section>
       <div class="toolbar">
         <input type="search" id="search" class="search" placeholder="名称・課題・次の作業で検索" aria-label="アプリ検索">
         <select id="stage" class="filter" aria-label="開発段階"><option value="all">すべての開発段階</option><option>構想</option><option>調査・設計</option><option>試作</option><option>限定公開</option><option>運用・改善</option><option>保留</option></select>
         <select id="group" class="filter" aria-label="登録区分"><option value="all">すべての登録</option><option value="repo">Repo確認済み</option><option value="chat">構想・未照合</option></select>
-        <select id="changeFilter" class="filter" aria-label="GitHub更新状況"><option value="all">GitHub変更：すべて</option><option value="changed">コミット更新あり</option><option value="failed">取得不能・部分失敗</option></select>
+        <select id="changeFilter" class="filter" aria-label="GitHub更新状況"><option value="all">GitHub確認：すべて</option><option value="pending">未レビュー（継続）</option><option value="changed">前回収集から変更</option><option value="baseline">初期基準・確認済み</option><option value="failed">取得不能・部分失敗</option></select>
       </div>
       <div class="sync" id="obsStatus" role="status" aria-live="polite">GitHubの公開更新情報を読み込み中です。台帳の内容とは別の観測値です。</div>
       <div class="helper-actions">
@@ -153,7 +160,10 @@
     if(changeChoice!=='all')list=list.filter(function(a){
       var obs=observations&&a.repo&&observations[a.repo.replace('https://github.com/','')];
       if(!obs)return false;
-      return changeChoice==='changed'?obs.comparison==='changed':(obs.fetch_status==='error'||obs.fetch_status==='partial'||obs.fetch_status==='not_public');
+      if(changeChoice==='pending')return obs.review_status==='pending';
+      if(changeChoice==='changed')return obs.comparison==='changed';
+      if(changeChoice==='baseline')return obs.review_status==='baseline'||obs.review_status==='reviewed';
+      return obs.fetch_status==='error'||obs.fetch_status==='partial'||obs.fetch_status==='not_public';
     });
     $('cards').replaceChildren();
     list.forEach(function(a){
@@ -170,25 +180,36 @@
         if(obs){
           var o=element('div','observed'),state=obs.fetch_status;
           if(state==='ok'||state==='partial'){
-            if(obs.comparison==='changed'){
+            if(obs.review_status==='pending'){
               o.classList.add('changed');
-              o.append(element('strong','', '● 前回収集からコミット更新あり（台帳反映は未判定）'));
+              o.append(element('strong','','● 要レビュー：確認基準から新しいコミットがあります'));
+              var anchorKind=obs.review_anchor_kind==='reviewed'?'前回確認済みコミット':'初期観測基準（内容のレビュー未実施）';
+              o.append(element('div','',anchorKind+'：'+(obs.review_anchor_sha||'不明').slice(0,9)));
+              if(obs.review_compare_url&&/^https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/compare\/[a-f0-9]{40}\.\.\.[a-f0-9]{40}$/i.test(obs.review_compare_url)){
+                var compare=element('a','review-link','差分をGitHubで確認 ↗');
+                compare.href=obs.review_compare_url;compare.target='_blank';compare.rel='noopener noreferrer';o.append(compare);
+              }
               if(obs.commit&&obs.commit.sha&&navigator.clipboard&&navigator.clipboard.writeText){
-                var reviewButton=element('button','review-copy','この差分の検証依頼をコピー');
+                var reviewButton=element('button','review-copy','このアプリの確認依頼をコピー');
                 reviewButton.type='button';
                 reviewButton.addEventListener('click',function(){
-                  var message='アプリ台帳の更新候補を検証してください。APP-ID: '+a.id+'。GitHub Repo: '+a.repo+'。観測済みコミット: '+obs.commit.sha+'。前回観測コミット: '+(obs.previous_sha||'不明')+'。このコミットだけで完成・公開と断定せず、個別RepoのREADME・PR・CI・公開URL等を読み、重要な状態変化が確認できたときだけ中央台帳 docs/APP_PORTFOLIO.md の該当APP-IDを差分更新してください。証拠が不足する場合は未確認と報告してください。';
-                  navigator.clipboard.writeText(message).then(function(){reviewButton.textContent='検証依頼をコピーしました ✓';}).catch(function(){reviewButton.textContent='コピーできませんでした';});
+                  var message='Session Deckの未レビュー更新を検証してください。APP-ID: '+a.id+'。Repo: '+a.repo+'。確認基準: '+obs.review_anchor_sha+'（'+(obs.review_anchor_kind==='bootstrap'?'初期観測のみ、レビュー済みではない':'過去の明示確認')+'）。最新コミット: '+obs.commit.sha+'。比較: '+(obs.review_compare_url||'未取得')+'。最新のREADME・関連PR・テスト・公開URLを調査し、実装・CI・Web配信・実機操作の証拠を分けて報告してください。重要な変化があれば中央台帳の該当APP-IDだけ更新してください。**レビューの完了が確認できた場合のみ** docs/PORTFOLIO_REVIEW_CHECKPOINTS.json の該当アプリのanchor_shaを、証拠URL・reviewed_atとともに更新してください。未確認ならアンカーは動かさず、推測でレビュー完了と記録しないでください。';
+                  navigator.clipboard.writeText(message).then(function(){reviewButton.textContent='確認依頼をコピーしました ✓';}).catch(function(){reviewButton.textContent='コピーできませんでした';});
                 });
                 o.append(reviewButton);
               }
-            }else if(obs.comparison==='unchanged'){
-              o.append(element('strong','', 'GitHub観測：前回収集からコミット変更なし'));
-            }else if(obs.comparison==='baseline'){
-              o.append(element('strong','', 'GitHub観測：初回基準データ'));
+            }else if(obs.review_status==='reviewed'){
+              o.append(element('strong','','✓ 最終観測コミットまでレビュー済み'));
+            }else if(obs.review_status==='baseline'){
+              o.append(element('strong','','初期観測基準：新しいコミットなし（人による内容レビューは未実施）'));
+            }else if(obs.review_status==='untracked'){
+              o.append(element('strong','','新規登録：レビュー基準の設定が必要'));
+            }else if(obs.comparison==='changed'){
+              o.append(element('strong','','前回収集から変更あり・レビュー情報は未取得'));
             }else{
-              o.append(element('strong','', 'GitHub観測：比較元がなく変化は未判定'));
+              o.append(element('strong','','レビュー状況は不明・収集済みコミットのみ表示'));
             }
+            if(obs.comparison==='changed')o.append(element('div','','前回スキャンからの変化あり（長期レビュー状態とは別情報）'));
             if(obs.commit&&obs.commit.sha){
               var comm=element('a','', '　'+obs.commit.sha.slice(0,9)+' ↗');
               if(obs.commit.url&&obs.commit.url.indexOf('https://github.com/')===0){comm.href=obs.commit.url;comm.target='_blank';comm.rel='noopener noreferrer';o.append(comm);}
@@ -224,6 +245,11 @@
     $('count').textContent=list.length+' 件を表示（台帳全体 '+data.length+' 件）';
     $('empty').hidden=list.length!==0;
   }
+  $('pendingJump').addEventListener('click',function(){
+    $('changeFilter').value='pending';
+    render();
+    $('count').scrollIntoView({block:'center',behavior:'auto'});
+  });
   ['search','stage','group','changeFilter'].forEach(function(id){$(id).addEventListener(id==='search'?'input':'change',render);});
   $('copyIntake').addEventListener('click',function(){
     var prompt='このアプリを「アプリ思いつき作成」の全体台帳と照合します。新規実装はせず、①正本GitHub Repo ②実装済・検証済・公開済を分離した現在地 ③最新コミット・PR・CI等の根拠URL ④GitHub未保存の成果 ⑤未完了と次の一手を簡潔に報告してください。未確認は未確認と明記してください。重要な状態変化時のみ記録します。中央台帳 https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md を最新確認し、更新できなければ未反映メモを出してください。';
@@ -239,15 +265,18 @@
         if(r&&typeof r.repo==='string'&&/^([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)$/.test(r.repo)&&typeof r.app_id==='string')observations[r.repo]=r;
       });
       var changed=snapshot.repositories.filter(function(x){return x.comparison==='changed';}).length;
+      var pending=snapshot.repositories.filter(function(x){return x.review_status==='pending';}).length;
+      $('pendingCount').textContent=String(pending);
       var errors=snapshot.repositories.filter(function(x){return x.fetch_status==='error'||x.fetch_status==='not_public';}).length;
       var scanDate=snapshot.generated_at?new Date(snapshot.generated_at):null;
       var dateOkay=scanDate&&Number.isFinite(scanDate.getTime());
       var jpTime=dateOkay?new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(scanDate):'未確認';
       var age=dateOkay?(Date.now()-scanDate.getTime())/86400000:Infinity;
       var stale=age>10?' ／ ⚠ 収集から10日以上経過。Actionsを確認してください。':'';
-      $('obsStatus').textContent='GitHub公開情報の最終収集：'+jpTime+' JST ／ Repo観測 '+snapshot.usable_count+'/'+snapshot.repo_count+'件 ／ 前回収集からコミット変更 '+changed+'件 ／ 取得不能 '+errors+'件'+stale+'。変更は台帳へ自動反映しません。週1回・台帳更新時・手動実行時に再収集します。';
+      $('obsStatus').textContent='GitHub公開情報の最終収集：'+jpTime+' JST ／ Repo観測 '+snapshot.usable_count+'/'+snapshot.repo_count+'件 ／ 要レビュー '+pending+'件 ／ 前回収集からコミット変更 '+changed+'件 ／ 取得不能 '+errors+'件'+stale+'。変更は台帳へ自動反映しません。週1回・台帳更新時・手動実行時に再収集します。';
       if(data.length)render();
     }).catch(function(){
+      $('pendingCount').textContent='?';
       $('obsStatus').textContent='GitHub公開情報の観測結果は未配信または取得不能です。台帳は引き続き閲覧できます。最新の収集状況はGitHub Actionsで確認してください。';
     });
   fetch('./docs/APP_PORTFOLIO.md',{cache:'no-store'})

@@ -28,7 +28,9 @@ PREVIOUS_URL = (
     "data/portfolio-observations.json"
 )
 MAX_REPOSITORIES = 60
-USER_AGENT = "session-deck-public-observer/1.0"
+USER_AGENT = "session-deck-public-observer/1.1"
+SHA = re.compile(r"^[a-fA-F0-9]{40}$")
+
 
 
 class SourceError(Exception):
@@ -96,6 +98,74 @@ def request_json(path: str) -> object:
         raise SourceError("github_http_" + str(exc.code)) from None
     except (URLError, TimeoutError, OSError, ValueError) as exc:
         raise SourceError("github_unavailable") from None
+
+
+def load_review_checkpoints(path: Path, apps: list[dict]) -> dict[str, dict]:
+    """Read explicit review anchors. Bootstrap does not mean human-reviewed.
+
+    Invalid checkpoints fail the job rather than silently clearing pending work.
+    New apps absent from the file are displayed as 'untracked'.
+    """
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or document.get("schema_version") != 1:
+        raise ValueError("Unsupported review checkpoint schema")
+    records = document.get("checkpoints")
+    if not isinstance(records, list) or len(records) > MAX_REPOSITORIES:
+        raise ValueError("Invalid review checkpoint list")
+    allowed = {app["app_id"]: app["repo"] for app in apps}
+    result = {}
+    seen_repos = set()
+    for entry in records:
+        if not isinstance(entry, dict):
+            raise ValueError("Invalid review checkpoint entry")
+        app_id = entry.get("app_id")
+        repo = entry.get("repo")
+        sha = entry.get("anchor_sha")
+        kind = entry.get("anchor_kind")
+        if (
+            not isinstance(app_id, str)
+            or not isinstance(repo, str)
+            or allowed.get(app_id) != repo
+            or app_id in result
+            or repo in seen_repos
+            or not isinstance(sha, str)
+            or not SHA.fullmatch(sha)
+            or kind not in ("bootstrap", "reviewed")
+        ):
+            raise ValueError("Invalid or stale review checkpoint: " + str(app_id))
+        if kind == "reviewed":
+            if not safe_date(entry.get("reviewed_at")):
+                raise ValueError("Reviewed checkpoint must have reviewed_at: " + app_id)
+            if not isinstance(entry.get("evidence_url"), str) or not clean_url(entry["evidence_url"]):
+                raise ValueError("Reviewed checkpoint must cite public GitHub evidence: " + app_id)
+        seen_repos.add(repo)
+        result[app_id] = entry
+    return result
+
+
+def annotate_review(record: dict, checkpoints: dict[str, dict]) -> None:
+    """Add review state independent of last published observation comparison."""
+    commit = record.get("commit")
+    sha = commit.get("sha") if isinstance(commit, dict) else None
+    if not isinstance(sha, str) or not SHA.fullmatch(sha):
+        record["review_status"] = "unavailable"
+        return
+    checkpoint = checkpoints.get(record["app_id"])
+    if not checkpoint:
+        record["review_status"] = "untracked"
+        return
+    anchor = checkpoint["anchor_sha"]
+    record["review_anchor_sha"] = anchor
+    record["review_anchor_kind"] = checkpoint["anchor_kind"]
+    if sha != anchor:
+        record["review_status"] = "pending"
+        record["review_compare_url"] = (
+            "https://github.com/" + record["repo"] + "/compare/" + anchor + "..." + sha
+        )
+    elif checkpoint["anchor_kind"] == "reviewed":
+        record["review_status"] = "reviewed"
+    else:
+        record["review_status"] = "baseline"
 
 
 def read_previous(url: str = PREVIOUS_URL) -> dict:
@@ -246,7 +316,7 @@ def fetch_one(item: dict, previous: dict, checked_at: str) -> dict:
     return record
 
 
-def collect(markdown: str, previous: dict | None = None, now: str | None = None) -> dict:
+def collect(markdown: str, previous: dict | None = None, now: str | None = None, review_checkpoints: dict[str, dict] | None = None) -> dict:
     apps = parse_ledger(markdown)
     checked_at = now or utc_now()
     prior = previous if previous is not None else {}
@@ -266,6 +336,8 @@ def collect(markdown: str, previous: dict | None = None, now: str | None = None)
                     "commit": None, "workflow": None, "pull_requests": [],
                     "issues": [], "comparison": "unavailable",
                 }
+    for record in results:
+        annotate_review(record, review_checkpoints or {})
     usable = sum(x["fetch_status"] in ("ok", "partial") for x in results)
     if usable == 0:
         raise RuntimeError("All repository reads failed; keep the existing published snapshot")
@@ -284,13 +356,17 @@ def main() -> int:
     cli.add_argument("--ledger", type=Path, default=Path("docs/APP_PORTFOLIO.md"))
     cli.add_argument("--output", type=Path, default=Path("_site/data/portfolio-observations.json"))
     cli.add_argument("--no-previous", action="store_true", help="Skip public prior snapshot (test only)")
+    cli.add_argument("--checkpoints", type=Path, default=Path("docs/PORTFOLIO_REVIEW_CHECKPOINTS.json"))
     args = cli.parse_args()
+    markdown = args.ledger.read_text(encoding="utf-8")
+    checkpoints = load_review_checkpoints(args.checkpoints, parse_ledger(markdown))
     previous = {} if args.no_previous else read_previous()
-    snapshot = collect(args.ledger.read_text(encoding="utf-8"), previous)
+    snapshot = collect(markdown, previous, review_checkpoints=checkpoints)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("public_repo_observations", snapshot["usable_count"], "/", snapshot["repo_count"], snapshot["generated_at"])
     print("changes", sum(x["comparison"] == "changed" for x in snapshot["repositories"]))
+    print("pending_reviews", sum(x["review_status"] == "pending" for x in snapshot["repositories"]))
     return 0
 
 
