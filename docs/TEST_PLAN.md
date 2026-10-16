@@ -42,3 +42,24 @@
 確認できた試験だけをPASSとする。実行していない操作は未実施。ブラウザ表示とGitHub Pagesの公開状態は、コミット成功だけを根拠にPASSにしない。
 
 報告様式: `T-ID / 実行環境 / 実施時刻(JST) / 期待 / 実際 / PASS・FAIL・未実施 / 参考URLまたはスクリーンショット`。
+
+
+## APP PORTFOLIO / 公開GitHub観測の受入記録（2026-10-17）
+
+アプリ台帳部分は従来のデモとは分離し、公開RepoのGitHub RESTメタデータのみを読取り専用で取り込みます。
+
+| ID | 試験と確認した事実 | 結果・根拠 |
+| --- | --- | --- |
+| PF-01 | 台帳21件（公開Repo13／チャット由来8）をWeb画面が表示 | PASS: [アプリ台帳](https://moyashimisosoup.github.io/session-deck/portfolio.html) で21件表示の読戻し |
+| PF-02 | 公開Repoメタデータの取得とPages JSON配信 | PASS: [生成JSON](https://moyashimisosoup.github.io/session-deck/data/portfolio-observations.json) で13/13件成功、取得不能0件を確認 |
+| PF-03 | GitHub Actionsのオフラインテストと全手順 | PASS: [Actions run #38949332176](https://github.com/moyashimisosoup/session-deck/actions/runs/38949332176)、tests / GitHub観測 / artifact upload / Pages deploy の各ステップ成功 |
+| PF-04 | 最新コミットSHAと直近Actionsのhead_shaを別扱いにする | PASS: 観測JSONで一致/不一致フラグを含むことを確認。ただし全アプリのCI品質を検証した意味ではない |
+| PF-05 | API失敗・非公開Repo・重複・無許可Owner・PR/Issueのタイトル非出力 | PASS: Pythonオフライン単体試験（PF-03のテストステップ）と公開JSONのスキーマを確認 |
+| PF-06 | 変更ありのみの絞り込み、日本時間表示、10日経過時の警告 | 公開画面へ実装済み。PC・iPhone実機の手動UI操作は未実施 |
+| PF-07 | 毎週月曜10:17 JSTのschedule起動と通知 | cron設定済み。**次回の実際の定期起動は未検証**。メール・プッシュ通知は未実装 |
+| PF-08 | 各AIの既存チャットやGitHub未保存成果の自動収集 | **未実装**。棚卸し指示をコピーする手動運用のみ |
+| PF-09 | 公開Pagesの秘密・個人情報・会話URLなど | 出力を公開Repoメタデータの許可リストに限定。網羅的な機密監査は未実施 |
+
+- 観測JSONは**デプロイ時のスナップショット**です。画面が開いている間、継続的にGitHubをポーリングしません。
+- GitHubリポジトリの「何かが更新された」ことと「そのアプリの仕様やテストが完成した」ことは異なります。
+- GitHub Actions本体の実行中に収集するため、当該スナップショットで自身のCIが`in_progress`となることがあります。公開されたJSONは実行後に自動で書き換わるライブ状態ではありません。
