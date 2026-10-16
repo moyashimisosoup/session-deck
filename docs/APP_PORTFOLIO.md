@@ -30,7 +30,7 @@
 
 | ID | アプリ・概要 | 段階／作業状態 | 開発正本 | 確認済みの成果・現在の課題 | 次の作業 |
 | --- | --- | --- | --- | --- | --- |
-| APP-001 | **Session Deck**：ChatGPT・Claude Code・Codexの作業横断管理 | 試作／検証待ち | [session-deck](https://github.com/moyashimisosoup/session-deck) | v0.1静的デモのUI・検索・引継ぎ・ブラウザ保存。実サービス連携なし。Pages・スマホ実機はREADMEでは未確認 | デモ操作と公開状態を検証し、台帳読取り連携の設計を追加 |
+| APP-001 | **Session Deck**：ChatGPT・Claude Code・Codexの作業横断管理 | 試作／検証待ち | [session-deck](https://github.com/moyashimisosoup/session-deck) | 既存v0.1静的デモと、実台帳を表示する[アプリ一覧画面](https://moyashimisosoup.github.io/session-deck/portfolio.html)を追加。2026-10-17にPagesの公開URLで21件（Repo確認13・会話8）表示、Actions [run #3](https://github.com/moyashimisosoup/session-deck/actions/runs/38943748943)成功を確認。実サービス自動連携とiPhone実機確認は未完了 | 実機UI確認とGitHub変更の読取り専用収集・差分提示を設計 |
 | APP-002 | **クロスワード工房**：日本語クロスワード教材・制作 | 試作／進行中 | [crossword-maker](https://github.com/yama-books/crossword-maker) | 6×6・14問のプレイ版、カナ検証、CI用テストを保存。主RepoのREADMEでは**自動生成・編集UIは未実装**（別チャット試作と混同しない） | 別試作との統合方針を決め、編集UIから実装 |
 | APP-003 | **POÈME / ESTATE**：地名から架空の高級マンション広告文を生成 | 限定公開／進行中 | [mansion-poet](https://github.com/yama-books/mansion-poet) | v0.1系Web版とPages公開、地名・地図・OpenPOI生成、回帰テストの記載。v0.1.2安定化中。モバイル実機未検証 | POI分類・通信中断・実機検証を進め、その後UI改良 |
 | APP-004 | **Reverse Planner**：締切から逆算する学習・生活タイマー | 試作／検証待ち | [reverse-planner](https://github.com/yama-books/reverse-planner) | v0.1静的Webコード、逆算計算・タスクタイマー・テスト。PagesはREADME上、設定・配信確認待ち | Pages・スマホ検証、固定予定と再計画の設計 |
