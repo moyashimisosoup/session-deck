@@ -53,7 +53,7 @@
 
 ### 今後の各チャットに渡す短い共通指示（必要な場合のみ）
 
-> 本アプリの正本はGitHubです。重要な状態変化（仕様確定・試作完成・公開・検証・停止・引継ぎ）の際だけ、APP-ID、確認できた成果と証拠URL、未確認事項、次の作業を短く記録してください。通常の応答では不要です。中央台帳 \`moyashimisosoup/session-deck/docs/APP_PORTFOLIO.md\` は最新内容を読み取ったうえで差分のみ反映し、書込みできなければ「未反映メモ」を出してください。未検証の結果を完成と扱わないでください。
+> 本アプリの正本はGitHubです。重要な状態変化（仕様確定・試作完成・公開・検証・停止・引継ぎ）の際だけ、APP-ID、確認できた成果と証拠URL、未確認事項、次の作業を短く記録してください。通常の応答では不要です。中央台帳 `moyashimisosoup/session-deck/docs/APP_PORTFOLIO.md` は最新内容を読み取ったうえで差分のみ反映し、書込みできなければ「未反映メモ」を出してください。未検証の結果を完成と扱わないでください。
 
 **適用範囲**：ChatGPTのプロジェクト共通指示は他のChatGPTプロジェクト／Codex／Claude Codeへ自動伝達されない。必要なら各RepoのAGENTS.mdやCLAUDE.mdからこの文書を案内する。ただし既存のAGENTS.md・CLAUDE.mdの安全・承認・運用規則を変更・上書きしない。
 
@@ -67,7 +67,7 @@
 
 ## Session Deck UIの仕様
 
-- [portfolio.html](../portfolio.html) はPagesに同梱する \`docs/APP_PORTFOLIO.md\` をブラウザで読み込み、A節とB節のAPP-ID行を抽出する。
+- [portfolio.html](../portfolio.html) はPagesに同梱する `docs/APP_PORTFOLIO.md` をブラウザで読み込み、A節とB節のAPP-ID行を抽出する。
 - 名前・状態・「次の作業」の検索、段階フィルタ、Repo確認済み／会話ベースの区分切替ができる。
 - **Markdownだけがデータの正本**。UIに二重のアプリJSONを内蔵しない。
 - 台帳が変わるとGitHub ActionsによるPages再配信対象になる。公開URLで読めるかは別途確認する。
