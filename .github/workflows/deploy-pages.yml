@@ -7,6 +7,8 @@ on:
       - index.html
       - styles.css
       - app.js
+      - motion.js
+      - motion.css
       - portfolio.html
       - docs/APP_PORTFOLIO.md
       - .github/workflows/deploy-pages.yml
@@ -36,12 +38,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          cp index.html styles.css app.js portfolio.html _site/
+          cp index.html styles.css app.js motion.css motion.js portfolio.html _site/
           mkdir -p _site/docs
           cp docs/APP_PORTFOLIO.md _site/docs/
           test -s _site/index.html
           test -s _site/styles.css
           test -s _site/app.js
+          test -s _site/motion.js
+          test -s _site/motion.css
           test -s _site/portfolio.html
           test -s _site/docs/APP_PORTFOLIO.md
           touch _site/.nojekyll
