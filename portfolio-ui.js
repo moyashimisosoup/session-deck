@@ -193,6 +193,25 @@
     if(app.repo) {
       const repo=safeLink(app.repo,'リポジトリ ↗');if(repo)links.append(repo);
     }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      const startCommand=[
+        '【Session START】アプリ「'+app.name+'」の作業開始メタデータを表示してください。',
+        'APP-ID: '+app.id,
+        '正本GitHub Repo: '+(app.repo || '未照合。正本を確認するまで作業先を決めない'),
+        '現在の台帳記録: '+app.stage,
+        '前回の次の一手: '+(app.next || '未記載'),
+        '既存のwork_idと引継ぎ記録を先に確認。見つからない場合は暫定番号として表示し、正本台帳の重複を調べてから登録。',
+        '推奨チャット名: 〖短い作業名〗MMDD・NN・具体的内容。実際のチャットタイトルは自動改名したとみなさない。',
+        '開始時刻JSTは確認できた時刻のみ記録。開始時刻の自動取得・記録先への保存ができなければ「未確認・未保存」と明示する。',
+        '作業開始前に正本の現行branch/HEAD、関連PRとCIを再確認。重要な節目と引継ぎ時のみCHECKPOINTを更新。',
+        '実会話URLや機微情報は公開GitHub Pagesへ保存しない。',
+        '共通規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CLOUD_SESSION_PROTOCOL.md'
+      ].join('\n');
+      const startButton=node('button','copy-review','このアプリの開始指示をコピー');
+      startButton.type='button';
+      attachCopy(startButton,startCommand,'開始指示をコピーしました ✓');
+      links.append(startButton);
+    }
     if(commit && commit.url){const commitLink=safeLink(commit.url,'最終コミット ↗');if(commitLink)links.append(commitLink);}
     if(obs && obs.review_status==='pending' && typeof obs.review_compare_url==='string' && allowedCompare.test(obs.review_compare_url)){
       const diff=safeLink(obs.review_compare_url,'確認基準からの差分 ↗');if(diff)links.append(diff);
@@ -280,6 +299,45 @@
       '台帳の更新ができなければ未反映メモを残してください。'
     ].join('\n');
     attachCopy($('copyIntake'),intake,'コピーしました ✓');
+
+    const protocol='https://github.com/moyashimisosoup/session-deck/blob/main/docs/CLOUD_SESSION_PROTOCOL.md';
+    const startTemplate=[
+      '【Session START】このチャットの開始メタデータを短く表示し、作業を開始してください。',
+      '推奨チャット名: 〖短い作業名〗MMDD・NN・具体的内容（実際のタイトル変更はユーザーが行う）',
+      'APP-ID: APP-___ / work_id: APP-___-W___ / source: ChatGPT・Codex・Claude Codeから選択',
+      '開始日時: 現在のJSTを信頼できる時計から確認して記録。取得できなければ「未確認」。開始時刻を過去に遡って推測しない。',
+      '目的: ___ / 正本GitHub Repo: ___ / 次の一手: ___',
+      '既存のwork_idがあれば新規発番せず、直近のHEAD・PR・CIと引継ぎを読戻して再開する。',
+      '以後は重要な成果・長文化・引継ぎ時だけ更新。会話ごとに長い管理報告をしない。',
+      '実セッションURL・生の会話ログ・個人情報は公開GitHub Pagesへ書かない。',
+      '共通規則: '+protocol
+    ].join('\n');
+    const checkpointTemplate=[
+      '【Session CHECKPOINT】この作業を継続できる最小の状態記録を作ってください。',
+      'APP-ID / work_id / 推奨チャット名: ___',
+      '記録日時JST: 信頼できる観測時刻のみ。取得不能なら「未確認」。',
+      '実施済み: ___ / GitHub保存・検証済み証拠URL: ___',
+      '未コミット・未保存の成果: ___ / 未確認・ブロッカー: ___',
+      '現行Repo / branch / HEAD: 取得した事実のみ記録。',
+      '次に実行する1操作と引継ぎ先: ___',
+      'Claude/Codexは観測できる実測コンテキスト量のみ使用。ChatGPTには推測の残量%を付けない。',
+      '保存不能なら「未保存」と明記し、このチャットに引継ぎメモを残す。',
+      '共通規則: '+protocol
+    ].join('\n');
+    const endTemplate=[
+      '【Session END / HANDOFF】今回の終了または担当交代を記録してください。',
+      'APP-ID / work_id / session: ___',
+      '終了日時JST: 明示的に区切った時刻のみ。未確認なら「未確認」、無応答から推測しない。',
+      '状態: 完了 / 保留 / 引継ぎ / 中断（該当するものを選択）',
+      'GitHub保存済み成果と証拠URL: ___',
+      '未実装・未確認 / 未コミット変更: ___',
+      '次の作業 / 次の担当セッション / 再開時に確認するGit状態: ___',
+      '実際に書込・読戻しができた場合のみ「保存済み」と報告する。公開Pagesへ実チャットIDやURLを載せない。',
+      '共通規則: '+protocol
+    ].join('\n');
+    attachCopy($('copySessionStart'),startTemplate,'開始テンプレをコピーしました ✓');
+    attachCopy($('copySessionCheckpoint'),checkpointTemplate,'チェックポイントをコピーしました ✓');
+    attachCopy($('copySessionEnd'),endTemplate,'終了・引継ぎをコピーしました ✓');
   }
   async function start() {
     setup();

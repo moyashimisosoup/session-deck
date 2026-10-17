@@ -8,6 +8,8 @@ on:
       - 'docs/APP_PORTFOLIO.md'
       - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
       - 'portfolio.html'
+      - 'docs/REPO_HYGIENE_20261017.md'
+      - 'docs/CLOUD_SESSION_PROTOCOL.md'
       - 'portfolio-ui.css'
       - 'portfolio-ui.js'
       - 'portfolio-polish.css'
@@ -65,4 +67,17 @@ jobs:
               raise SystemExit('Command palette or keyboard checks missing')
           if ':root[data-theme="dark"]' not in polish or 'prefers-reduced-motion' not in polish:
               raise SystemExit('Dark theme or motion reduction missing')
+          for hook in ['id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md']:
+              if hook not in html:
+                  raise SystemExit('Missing session audit tool hook: '+hook)
+          for label in ['copySessionStart','copySessionCheckpoint','copySessionEnd','attachCopy(']:
+              if label not in script:
+                  raise SystemExit('Missing session template wiring: '+label)
+          protocol=Path('docs/CLOUD_SESSION_PROTOCOL.md').read_text(encoding='utf-8')
+          audit=Path('docs/REPO_HYGIENE_20261017.md').read_text(encoding='utf-8')
+          if 'started_at' not in protocol or 'ended_at' not in protocol or 'work_id' not in protocol:
+              raise SystemExit('Lifecycle timestamp/ID contract missing')
+          if '非公開Repoの名前' not in audit and '非公開のRepo名' not in audit:
+              raise SystemExit('Public audit privacy note missing')
+
           PY
