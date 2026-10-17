@@ -121,7 +121,7 @@ code{background:#f2f5fa;padding:2px 4px;border-radius:4px;word-break:break-word}
       const url=new URL(input);
       if(url.protocol!=='https:'||url.hostname!=='chatgpt.com'||url.username||url.password)return null;
       // Strip query and fragment. Reject public sharing links and unrelated destinations.
-      if(!/^\\/(?:g\\/g-[a-z0-9-]+\\/)?c\\/[a-z0-9-]{8,}\\/?$/i.test(url.pathname))return null;
+      if(!/^\/(?:g\/g-[a-z0-9-]+\/)?c\/[a-z0-9-]{8,}\/?$/i.test(url.pathname))return null;
       return 'https://chatgpt.com'+url.pathname;
     }catch{return null;}
   }
