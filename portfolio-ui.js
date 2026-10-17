@@ -356,6 +356,9 @@
       '◦ APP-ID/アプリ名:作業領域｜状態｜確認したJST時刻（観測・保存の区別）｜証拠（PR・commit・未保存）｜次の具体的1操作',
       '登録されていないwork_id・未取得の開始/終了時刻・コンテキスト利用率・進捗%は捏造しない。',
       '毎回答の表示は1行だけ。長いSTART / CHECKPOINT / HANDOFF / ENDの記録は重要な節目だけ行う。',
+      '重要な成果・決定・PR・テストが前回CHECKPOINT後2〜3件続いたら記録の鮮度を確認。文脈の混同や次の重い作業の前にはHANDOFF_READYを提案。これはコンテキスト残量の推定ではない。',
+      '保存できたと言うのは権限のある非公開ストアへの書込みと読戻しを確認した場合だけ。失敗時は未保存の引継ぎメモを残す。',
+      '詳細ルール: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CHATGPT_EARLY_ROTATION_POLICY.md',
       '実チャットのログや非公開セッションID・リンクを公開Pagesや公開GitHubへ保存しない。',
       'GitHubの最終pushとチャットの最終活動を混同しない。',
       '共通の表示規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CHAT_PROGRESS_BAR.md'
