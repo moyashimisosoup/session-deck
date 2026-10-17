@@ -23,7 +23,8 @@ ISSUE_BLOCK = re.compile(
     re.escape(MARKER) + r"\s*" + ("~" * 3) + r"json\s*\n(.*?)\n" + ("~" * 3), re.DOTALL
 )
 REPO_NAME = re.compile(r"^[a-z][a-z0-9-]{2,48}[a-z0-9]$")
-RESERVED = {"app-factory", "session-deck", "koten", "tradingsystem"}
+RESERVED = {"app-factory", "session-deck", "koten", "tradingsystem", "example-learning-tool"}
+LOCK_PREFIX = "<!-- APP_FACTORY_APPROVAL_LOCK_V1"
 FIELDS = {"schema_version", "repo_name", "app_name", "description", "visibility", "decision"}
 BASE = "https://api.github.com"
 API_VERSION = "2022-11-28"
@@ -46,8 +47,16 @@ def parse_request(body: str) -> RequestData:
     blocks = ISSUE_BLOCK.findall(body)
     if len(blocks) != 1:
         raise FactoryError("Exactly one APP_FACTORY_REQUEST_V1 JSON block is required.")
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise FactoryError("Duplicate JSON keys are not allowed.")
+            result[key] = value
+        return result
+
     try:
-        data = json.loads(blocks[0])
+        data = json.loads(blocks[0], object_pairs_hook=unique_pairs)
     except ValueError as exc:
         raise FactoryError("Request JSON is invalid.") from exc
     if not isinstance(data, dict) or set(data) != FIELDS:
@@ -92,6 +101,55 @@ def request_api(token: str, method: str, path: str, payload: dict | None = None)
         raise FactoryError(f"GitHub API rejected {method} {path}: HTTP {exc.code}.") from exc
     except (URLError, TimeoutError) as exc:
         raise FactoryError("GitHub API connection failed. Repository creation was not confirmed.") from exc
+
+
+def ensure_approval_lock(data: RequestData, issue_number: int, issue_token: str) -> None:
+    """Pin the repository slug to this private Issue before any creation attempt.
+
+    Uses GITHUB_TOKEN with issues:write, not the account-wide repo creator.
+    A changed Issue body + relabel must never create a second repository.
+    Workflow concurrency serializes label events per Issue.
+    """
+    if not issue_token:
+        raise FactoryError("APP_FACTORY_ISSUE_TOKEN is missing; repository creation is blocked.")
+    if type(issue_number) is not int or not 1 <= issue_number <= 10_000_000:
+        raise FactoryError("A positive source Issue number is required.")
+    path = f"/repos/{FACTORY_REPOSITORY}/issues/{issue_number}/comments?per_page=100"
+    expected = f"{LOCK_PREFIX} issue={issue_number} repo={data.repo_name} -->"
+
+    def inspect(comments):
+        if not isinstance(comments, list):
+            raise FactoryError("Could not inspect the approved Issue comments.")
+        locks = [
+            c.get("body", "").strip()
+            for c in comments
+            if isinstance(c, dict)
+            and isinstance(c.get("body"), str)
+            and c.get("user", {}).get("login") == "github-actions[bot]"
+            and LOCK_PREFIX in c["body"]
+        ]
+        if locks:
+            if any(not line.startswith(expected) for line in locks):
+                raise FactoryError("Issue has a different approval lock; refusing a second repository.")
+            return True
+        if len(comments) >= 100:
+            raise FactoryError("Too many Issue comments to safely verify approval lock.")
+        return False
+
+    status, comments = request_api(issue_token, "GET", path)
+    if status != 200:
+        raise FactoryError("Cannot read approval records; no repository will be created.")
+    if inspect(comments):
+        return
+    status, _ = request_api(
+        issue_token, "POST", path,
+        {"body": expected + "\nApproved slug is frozen for this Issue. Modify through a new request only."}
+    )
+    if status != 201:
+        raise FactoryError("Approval lock could not be stored.")
+    status, comments = request_api(issue_token, "GET", path)
+    if status != 200 or not inspect(comments):
+        raise FactoryError("Approval lock readback failed; repository creation aborted.")
 
 
 def create_repository(data: RequestData, issue_number: int, token: str) -> tuple[str, bool]:
@@ -142,6 +200,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.issue < 1:
             raise FactoryError("Issue number must be positive.")
         if args.execute:
+            ensure_approval_lock(data, args.issue, os.environ.get("APP_FACTORY_ISSUE_TOKEN", ""))
             repo_url, created = create_repository(
                 data, args.issue, os.environ.get("APP_FACTORY_REPO_CREATOR", "")
             )
