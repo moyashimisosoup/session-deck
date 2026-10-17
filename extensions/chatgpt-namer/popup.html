@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{width:360px;max-width:100%;box-sizing:border-box;padding:18px;margin:0;font:13px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#20314a;background:#f6f8fb}
+h1{font-size:17px;margin:0 0 9px}.tip{color:#63748b;font-size:12px;margin:0 0 14px}
+.card{background:white;border:1px solid #dce5ee;padding:13px;border-radius:10px;margin-bottom:12px}
+#session{overflow-wrap:anywhere;white-space:pre-wrap;font-size:12px;color:#45556c}
+label{display:block;font-weight:700;font-size:12px;margin:0 0 7px}
+textarea{width:100%;min-height:75px;resize:vertical;box-sizing:border-box;border:1px solid #ccd7e4;border-radius:9px;padding:10px;font:13px/1.5 inherit;color:inherit;background:white}
+button{border:1px solid #d4dfed;background:white;color:#284064;padding:10px;border-radius:9px;cursor:pointer;font:600 12px inherit;min-height:42px}
+button.primary{background:#4464dd;border-color:#4464dd;color:#fff;width:100%;margin-top:12px}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-offset:2px}
+.note{font-size:11px;color:#6c7d90}#result{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#295c4d;min-height:30px}
+.link{display:inline-block;margin-bottom:12px;font-size:12px}
+</style></head>
+<body>
+<h1>Session Deck Namer</h1>
+<p class="tip">開いているChatGPT Webの会話を、明示操作で1件だけ変更します。</p>
+<div class="card"><strong>現在の会話</strong><div id="session">確認中…</div></div>
+<a class="link" href="https://moyashimisosoup.github.io/session-deck/naming.html" target="_blank" rel="noopener noreferrer">命名コンソールを開く ↗</a>
+<label for="desired">正式名称（コピーした名前を貼り付け）</label>
+<textarea id="desired" spellcheck="false" placeholder="【作業名】1017・SD-012・具体的内容"></textarea>
+<button id="rename" class="primary" disabled>この会話の名前を変更</button>
+<p id="result" role="status" aria-live="polite"></p>
+<p class="note">自動・一括変更はしません。ChatGPT画面から変更成功を確認できない場合は「未確認」と表示します。ログイン情報・会話本文・認証情報は取得しません。</p>
+<script src="popup.js"></script>
+</body></html>
