@@ -211,6 +211,22 @@
       startButton.type='button';
       attachCopy(startButton,startCommand,'開始指示をコピーしました ✓');
       links.append(startButton);
+      const resumeCommand=[
+        '【Session RESUME / READ ONLY】既存の非公開引継ぎを復元してください。対象: '+app.id+'（'+app.name+'）。',
+        '認証済みGoogle Driveから「Session Deck - Private Session Vault」フォルダを検索し、所有者限定・shared=falseを確認する。',
+        'その配下の「Session Deck | Private Event Journal | Pilot」を見つけ、最新revisionを含めて読込む。',
+        'SD_EVENT_V1で始まるv1イベントだけを解析し、APP-ID='+app.id+' のwork_idごとに最新イベントと次の一手を照合。',
+        '試験用APP-001-W9999／synthetic-session-never-actualは実作業ではないので必ず除外する。',
+        '対象Workが未記録なら「非公開セッション記録なし」。開始・終了日時が確認できなければ「未確認」。',
+        'ChatGPTの記録元IDや自動開始時刻を推測しない。実際のGitHub HEAD・PR・CIを今の状態で再確認する。',
+        '未保存の会話本文、非公開DocのURLやIDをGitHub Pages・公開Issue・公開Repoへ出さない。',
+        '対象の結果をこのチャットに短く表示。保存や状態変更は指示があるまで行わない。',
+        '運用規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/PRIVATE_SESSION_STORE_PLAN.md'
+      ].join('\n');
+      const resumeButton=node('button','copy-review','このアプリの引継ぎを復元');
+      resumeButton.type='button';
+      attachCopy(resumeButton,resumeCommand,'引継ぎ復元指示をコピーしました ✓');
+      links.append(resumeButton);
     }
     if(commit && commit.url){const commitLink=safeLink(commit.url,'最終コミット ↗');if(commitLink)links.append(commitLink);}
     if(obs && obs.review_status==='pending' && typeof obs.review_compare_url==='string' && allowedCompare.test(obs.review_compare_url)){
@@ -336,6 +352,19 @@
       '共通規則: '+protocol
     ].join('\n');
     attachCopy($('copySessionStart'),startTemplate,'開始テンプレをコピーしました ✓');
+    const resumeTemplate=[
+      '【Session RESUME / READ ONLY】このセッションに関連する非公開引継ぎの現在地を復元してください。',
+      'APP-ID / work_id: ___（既存のIDを先に確認し、推測の新規IDを作らない）',
+      '認証済みのGoogle Driveから「Session Deck - Private Session Vault」を検索し、その配下の「Session Deck | Private Event Journal | Pilot」を読戻し。',
+      'shared=false・所有者限定の文書だけを利用。権限を確認できなければ取得しない。',
+      'SD_EVENT_V1で始まるイベントだけを照合し、実データでないsynthetic／pilotイベントを除外。',
+      '開始・最終イベント・終了・次の一手を分けて表示。時刻が不明なら「未確認」。',
+      'GitHubのHEAD・PR・CI・公開ページの現在状態は別途確認し、旧セッションの自己申告を鵜呑みにしない。',
+      '非公開Docの実ID、会話URL、記録本文を公開RepoやPagesへ書かない。まずは読取りだけ。',
+      '非公開Docが見つからないときは未記録として扱い、存在を捏造しない。',
+      '詳しい規則: '+protocol
+    ].join('\n');
+    attachCopy($('copySessionResume'),resumeTemplate,'再開・復元指示をコピーしました ✓');
     attachCopy($('copySessionCheckpoint'),checkpointTemplate,'チェックポイントをコピーしました ✓');
     attachCopy($('copySessionEnd'),endTemplate,'終了・引継ぎをコピーしました ✓');
   }
