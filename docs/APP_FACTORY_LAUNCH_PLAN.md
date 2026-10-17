@@ -37,9 +37,9 @@ ChatGPTがプロジェクト設定を自分で変更したり、ユーザー発�
 1. ブラウザで [GitHub 新規リポジトリ作成](https://github.com/new) を開く。
 2. Owner=`moyashimisosoup`、Repository name=`app-factory`、Visibility=**Private**、READMEを追加して作成する。
 3. ChatGPTに作成したRepoのURLを伝える。
-4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置。専用Repoの **Actions → App Factory offline readiness tests → Run workflow** を1回だけ実行してテスト成功を確認。**秘密鍵なしで検査可能**だが、private RepoのActions分が必要。すでに利用枠不足なら成功扱いせず、予算や実行環境を整えるまで停止する。既存TradingSystem用self-hostedランナーの勝手な転用は禁止。
+4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置。専用Repoの **Actions → App Factory offline readiness tests → Run workflow** を1回だけ実行してテスト成功を確認し、`factory-approved`ラベルが作成されたことも確認。**秘密鍵なしで検査可能**だが、private RepoのActions分が必要。すでに利用枠不足なら成功扱いせず、予算や実行環境を整えるまで停止する。既存TradingSystem用self-hostedランナーの勝手な転用は禁止。
 5. ユーザーがGitHubの設定画面だけで専用fine-grained PATを作成し、Factory private Repoの`APP_FACTORY_REPO_CREATOR` Action Secretに登録する。必要なのはRepo作成の`repository_creation:write`権限であり、既存Repoの削除・移管権限は付けない。ChatGPTにtoken文字列を渡さない。`APP_FACTORY_ISSUE_TOKEN`はGitHub Actions標準の`github.token`から自動供給され、手動設定不要。
-6. private Repoに`factory-approved`ラベルを一度用意する。
+6. `preflight.yml`が `factory-approved` を未作成のときだけ自動用意する。ユーザーによるラベル作成は不要。**最初の新アプリの採用申請にラベルを付ける行為は、引き続き個別の明示承認が必要。**
 
 ### M2：最初の実例
 
