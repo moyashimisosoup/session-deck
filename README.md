@@ -25,6 +25,12 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
 - 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
 
+## ChatGPTの早期引継ぎとプロジェクト設定（2026-10-17）
+
+- [早期引継ぎ運用規則](docs/CHATGPT_EARLY_ROTATION_POLICY.md)：通常ChatGPTのコンテキスト残量を推測せず、意味のある進捗・記録の鮮度・作業の複雑さでCHECKPOINT/HANDOFF_READYを判断します。
+- [ChatGPTプロジェクト指示への追記文](docs/CHATGPT_PROJECT_INSTRUCTIONS.md)：ユーザーが「アプリ思いつき作成」のプロジェクト設定へ**手動で1回貼る**ための短文。GitHub保存だけではChatGPTの設定は自動更新されません。
+- 公開[アプリ台帳](portfolio.html)下部のコピー機能にも「早期引継ぎの規則」を追加します。ここから実チャットや非公開イベントを自動取得する機能はありません。
+
 ## 全アプリ共通の小さな進捗表示（2026-10-17）
 
 - [Chat Progress Bar](docs/CHAT_PROGRESS_BAR.md)：各開発チャットの回答末尾に**現在の状態・確認したJST時刻・保存済みの証拠・次の一手**を1行表示する共通ルール。ChatGPTのプロジェクト設定へ貼り付ける短文も収録。プロジェクト設定自体をGitHubから自動変更したものではありません。
