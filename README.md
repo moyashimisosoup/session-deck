@@ -25,12 +25,12 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
 - 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
 
-## 新アプリ受付を自動化する App Factory（初期実装）
+## 新アプリ受付を自動化する App Factory（公開受付版・2026-10-17）
 
-- [採用→非公開Repo作成の設計と導入手順](docs/APP_FACTORY_LAUNCH_PLAN.md)／[移植用のテスト済みコード](bootstrap/app-factory/README.md)。
-- 「新アプリ案」で**構想整理のみ**、「採用」で承認依頼、「作成を承認」でprivate Repo生成を試みる。公開GitHubに個別アイデアの申請本文は置かない。
-- 現在この公開Repoに保存されているのは**起動しないブートストラップ**。ユーザーが専用の非公開受付Repoを一度作成し、そこへ設置・Action Secretを設定するまで自動作成機能は稼働しない。
-- リポジトリ生成、初期ファイル配置、台帳のAPP-ID登録、Pages配信をそれぞれ別々に検証する。未実施を「作成済み」と報告しない。
+- **稼働用の正本は[公開App Factory](https://github.com/moyashimisosoup/app-factory)**。Session Deckの[旧Private移植ブートストラップ](bootstrap/app-factory/README.md)は過去資料であり、現在の公開Factoryへ再移植しない。
+- 「新アプリ案」で構想整理、「採用」で**公開して差し支えない内容だけ**[App Factory Issue](https://github.com/moyashimisosoup/app-factory/issues/new/choose)へ登録、本人が明示的に承認してラベルを付けたときのみPrivate Repo生成を試みる。
+- [CI](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930675)と[初回事前検査](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930717)は成功済み。ただし**作成専用Secret・実際のPrivate Repo生成は未確認**。
+- 詳細は[現行の導入・安全性計画](docs/APP_FACTORY_LAUNCH_PLAN.md)。公開Issue・Actionsログへ機密情報やPrivate Repo URLを記載しない。Repo生成、初期ファイル配置、APP-ID台帳登録、Pages公開は別工程。
 
 ## ChatGPTの早期引継ぎとプロジェクト設定（2026-10-17）
 

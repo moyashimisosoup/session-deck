@@ -1,5 +1,8 @@
 # App Factory v0.1：非ローカル新アプリ受付と非公開Repo生成
 
+> **歴史的な初期設計（非推奨・稼働用ではない）:** このブートストラップは受付リポジトリをPrivateにする旧案です。2026-10-17にユーザーの指定で[公開App Factory](https://github.com/moyashimisosoup/app-factory)を実装しました。**以下のファイルと手順を稼働Repoへコピーし直さないでください。** 正本は[公開RepoのREADME](https://github.com/moyashimisosoup/app-factory/blob/main/README.md)と[現在の導入計画](../../docs/APP_FACTORY_LAUNCH_PLAN.md)です。公開Issueに非公開のアプリ案や秘密情報を投稿しないでください。
+
+
 **実装状態:** このディレクトリはSession Deck上に保存する**移植用ブートストラップ**です。実行用のGitHub Actionsワークフローはサブディレクトリにあるため、現時点では起動しません。プライベートな `moyashimisosoup/app-factory` が作成されるまでは、受付自動化は**未稼働**です。
 
 ## 一番簡単な使い方
