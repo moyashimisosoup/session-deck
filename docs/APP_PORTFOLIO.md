@@ -77,7 +77,7 @@
 
 ## C. 重複・範囲確認が必要なもの
 
-- [moyashimisosoup/koten](https://github.com/moyashimisosoup/koten)：古典学習帳の先行設計Repo。APP-007の**現行実装先は yama-books/koten** とし、二重集計しない。移行済みかの最終整理は別途確認。
+- 古典学習帳の**旧設計リポジトリ（非公開）**：APP-007の現行公開実装先は[yama-books/koten](https://github.com/yama-books/koten)。旧設計の存在だけを中央台帳に記録し、実体名や閲覧URLは非公開管理先でのみ扱う。二重集計しない。
 - [moyashimisosoup/soba-price](https://github.com/moyashimisosoup/soba-price)：READMEはタイトルのみ。APP-006はユーザー指定の `yama-books/soba-price` を優先し、旧Repoは重複候補。
 - [moyashimisosoup/shukudai-kanri](https://github.com/moyashimisosoup/shukudai-kanri)：READMEの内容が「しゅくだいノート」と重なる。APP-010と一体かを確認し、当面別のAPP-IDを発行しない。
 - その他確認できたRepo（`desktop-tutorial`、`power-balance`、`seiseki-shukei-tool`、`TradingSystem` 等）は、今回の「アイデア出しアプリ」台帳へ自動的に組み入れない。ユーザーの運用範囲を確認後、必要なら追加する。特にTradingSystemの既存管理・安全規則を本台帳で置換しない。
