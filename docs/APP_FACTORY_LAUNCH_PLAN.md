@@ -37,7 +37,7 @@ ChatGPTがプロジェクト設定を自分で変更したり、ユーザー発�
 1. ブラウザで [GitHub 新規リポジトリ作成](https://github.com/new) を開く。
 2. Owner=`moyashimisosoup`、Repository name=`app-factory`、Visibility=**Private**、READMEを追加して作成する。
 3. ChatGPTに作成したRepoのURLを伝える。
-4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置。`preflight.yml`がmain上のCIでテスト成功となることを確認。**秘密鍵なしでこの段階まで動く**。
+4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置。専用Repoの **Actions → App Factory offline readiness tests → Run workflow** を1回だけ実行してテスト成功を確認。**秘密鍵なしで検査可能**だが、private RepoのActions分が必要。すでに利用枠不足なら成功扱いせず、予算や実行環境を整えるまで停止する。既存TradingSystem用self-hostedランナーの勝手な転用は禁止。
 5. ユーザーがGitHubの設定画面だけで専用fine-grained PATを作成し、Factory private Repoの`APP_FACTORY_REPO_CREATOR` Action Secretに登録する。必要なのはRepo作成の`repository_creation:write`権限であり、既存Repoの削除・移管権限は付けない。ChatGPTにtoken文字列を渡さない。`APP_FACTORY_ISSUE_TOKEN`はGitHub Actions標準の`github.token`から自動供給され、手動設定不要。
 6. private Repoに`factory-approved`ラベルを一度用意する。
 
@@ -48,6 +48,13 @@ ChatGPTがプロジェクト設定を自分で変更したり、ユーザー発�
 - Actionsログ・作成RepoのURLとprivate状態を検証する。
 - 再実行しても同じIssueから重複生成されないことをテストする。
 - 新Repoへの初期ファイル保存、Session Deck台帳への追加とreadbackは**次工程として明示的に実施**する。新Repoが接続プラグインから見えなければユーザーがアクセス範囲を確認。
+
+## 実行料金とフォールバック
+
+- private GitHub Actionsの`ubuntu-latest`はアカウントの無料分を使用し、超過は課金対象になり得る。無料枠枯渇時はWorkflowが実行不可の場合がある。[GitHub公式請求仕様](https://docs.github.com/en/actions/concepts/billing-and-usage)。
+- 初回は`preflight.yml`を**手動1回だけ**起動し、作成実行は承認Issueの`factory-approved`を付けた時だけ。失敗時に自動再試行して利用分を浪費しない。
+- 既存のTradingSystem用WSLセルフホストRunnerは別Repoに登録済みであり、App Factoryへ自動接続されない。別途安全に登録・承認されない限り使わない。
+- Actionsが使えない場合は、設定復旧までRepo自動作成を保留し、ユーザーがGitHub UIで個別Repoを作る暫定運用に切り替えられる。公開Repo／Issueへ非公開アイデアを移さない。
 
 ## ChatGPTプロジェクト共通指示への短い追記案
 

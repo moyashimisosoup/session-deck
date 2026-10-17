@@ -15,7 +15,7 @@
 
 - GitHub `moyashimisosoup` に **`app-factory`** という**非公開**リポジトリを新規作成する（空のREADMEで初期化）。このチャットのGitHub接続にはリポジトリ新規作成操作がないため、ここだけ手動。
 - 作成後、ChatGPTへ `https://github.com/moyashimisosoup/app-factory` を送る。ブートストラップ配下の `scripts/`・`.github/workflows/`・`.github/ISSUE_TEMPLATE/` を**リポジトリのルート構造**にコピーし、PR等で確認してmainに統合する（ChatGPTのGitHub接続から実施可能）。
-- 先にprivate Repoへ`preflight.yml`も配置し、main上の「App Factory offline readiness tests」CIが成功することを確認する。**資格情報なしで実行可能**。
+- private Repoへ`preflight.yml`も配置し、**Actions → App Factory offline readiness tests → Run workflow** から1度だけ実行、成功を確認する。**資格情報は不要**。不要な私有RepoのActions分消費を避けるため自動push実行はしない。利用枠不足で実行できない場合は成功とみなさず、設定・利用枠の復旧か別の承認済みランナー環境を待つ。
 - GitHubリポジトリ設定の **Secrets and variables > Actions** に、最小権限 `repository_creation:write` を持つ専用のfine-grained PATを **`APP_FACTORY_REPO_CREATOR`** という名前で登録する。**PATの値は絶対にチャット・Issue・GitHubファイルに貼らない**。GitHub APIとPATの権限範囲は最新版を確認する。2026-10-13から単独リポジトリ作成権限が利用可能。
 - GitHub IssuesのLabelsに **`factory-approved`** を一度作成する（またはIssueへラベル追加できることを確認）。作成・承認は `moyashimisosoup` で行う。
 - まずは**ダミー申請をラベルなしで**起票し、テストが自動実行されないことを確認。その後、実際に採用した1件を明示的に承認して作成実験する。新Repoを誤って本番公開しない。
