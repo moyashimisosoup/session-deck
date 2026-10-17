@@ -37,7 +37,7 @@ class ParseTests(unittest.TestCase):
             app.parse_request(body(secret="NEVER INCLUDE ME"))
 
     def test_reject_reserved_and_unsafe_slugs(self):
-        for slug in ["app-factory", "session-deck", "UPPER", "../bad", "aa", "-bad", "bad-", "bad name"]:
+        for slug in ["app-factory", "session-deck", "example-learning-tool", "UPPER", "../bad", "aa", "-bad", "bad-", "bad name"]:
             with self.subTest(slug=slug), self.assertRaises(app.FactoryError):
                 app.parse_request(body(repo_name=slug))
 
@@ -53,10 +53,64 @@ class ParseTests(unittest.TestCase):
         with self.assertRaises(app.FactoryError):
             app.parse_request(app.MARKER + "\n~~~json\n{missing}\n~~~")
 
+    def test_reject_duplicate_json_keys(self):
+        ambiguous = app.MARKER + '\n~~~json\n' + (
+            '{"schema_version":1,"repo_name":"sample-learning-tool",'
+            '"app_name":"学習アプリ","description":"test","visibility":"public",'
+            '"visibility":"private","decision":"adopted"}'
+        ) + '\n~~~'
+        with self.assertRaisesRegex(app.FactoryError, "Duplicate JSON"):
+            app.parse_request(ambiguous)
+
     def test_reject_trailing_secret_not_in_block(self):
         # Other issue prose is ignored; never printed by the worker.
         parsed = app.parse_request("some notes\n" + body() + "\nsecret prose")
         self.assertEqual(parsed.repo_name, "sample-learning-tool")
+
+
+class ApprovalLockTests(unittest.TestCase):
+    def setUp(self):
+        self.data = app.parse_request(body())
+        self.issue = 42
+        self.expected = "<!-- APP_FACTORY_APPROVAL_LOCK_V1 issue=42 repo=sample-learning-tool -->"
+        self.bot = {"user": {"login": "github-actions[bot]"}, "body": self.expected}
+
+    @patch.object(app, "request_api")
+    def test_first_approval_stamps_lock_and_reads_back(self, api):
+        api.side_effect = [(200, []), (201, {"id": 1}), (200, [self.bot])]
+        app.ensure_approval_lock(self.data, self.issue, "test-issue-token")
+        self.assertEqual([call.args[1] for call in api.call_args_list], ["GET", "POST", "GET"])
+        self.assertIn(self.expected, api.call_args_list[1].args[3]["body"])
+
+    @patch.object(app, "request_api")
+    def test_same_issue_and_same_slug_safe_retry(self, api):
+        api.return_value = (200, [self.bot])
+        app.ensure_approval_lock(self.data, self.issue, "test-issue-token")
+        self.assertEqual(api.call_count, 1)
+
+    @patch.object(app, "request_api")
+    def test_modified_slug_after_approval_is_rejected(self, api):
+        api.return_value = (200, [self.bot])
+        other = app.parse_request(body(repo_name="another-learning-tool"))
+        with self.assertRaisesRegex(app.FactoryError, "different approval lock"):
+            app.ensure_approval_lock(other, self.issue, "test-issue-token")
+        self.assertEqual(api.call_count, 1)
+
+    @patch.object(app, "request_api")
+    def test_full_page_with_no_lock_fails_closed(self, api):
+        api.return_value = (200, [{"user":{"login":"someone"},"body":"hello"}] * 100)
+        with self.assertRaisesRegex(app.FactoryError, "Too many"):
+            app.ensure_approval_lock(self.data, self.issue, "test-issue-token")
+
+    @patch.object(app, "request_api")
+    def test_lock_not_persisted_prevents_repo_creation(self, api):
+        api.side_effect = [(200, []), (201, {"id": 1}), (200, [])]
+        with self.assertRaisesRegex(app.FactoryError, "readback failed"):
+            app.ensure_approval_lock(self.data, self.issue, "test-issue-token")
+
+    def test_missing_issue_token_fails_closed(self):
+        with self.assertRaisesRegex(app.FactoryError, "APP_FACTORY_ISSUE_TOKEN"):
+            app.ensure_approval_lock(self.data, self.issue, "")
 
 
 class GitHubCalls(unittest.TestCase):

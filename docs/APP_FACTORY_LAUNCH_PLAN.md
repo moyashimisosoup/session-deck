@@ -9,18 +9,19 @@
 | --- | --- | --- |
 | 「新アプリ案：〇〇」 | 構想を整理し、APP_PORTFOLIOと既存Repoの重複を調べる | **なし**。採否未確定 |
 | 「この新アプリ案を採用」 | slugと所有者（当面moyashimisosoup）とprivate既定を確認して非公開FactoryのIssueへ登録 | Issue作成のみ。新Repoはまだない |
-| 「この案のRepo作成を承認」 | Issue内容と既存Repoを再照合し、本人承認に基づく \`factory-approved\` ラベル付与を実行 | GitHub ActionsがRepo作成。非公開だけ |
+| 「この案のRepo作成を承認」 | Issue内容と既存Repoを再照合し、本人承認に基づく `factory-approved` ラベル付与を実行 | GitHub ActionsがRepo作成。非公開だけ |
 | 作成成功後 | GitHubからRepo実在・private・commitを読戻し、初期ファイル配置・台帳への登録 | 権限がある範囲だけ実行。失敗は未完了 |
 
 ChatGPTがプロジェクト設定を自分で変更したり、ユーザー発言なしに承認ラベルを付けたり、新Repoへ自動接続できると仮定しない。
 
 ## 安全性を優先したv0.1境界
 
-- **受付はprivateの専用 \`moyashimisosoup/app-factory\` Repo**。公開のSession DeckのIssuesには申請本文を残さない。
-- Issue authorとapproval actorの双方が \`moyashimisosoup\` であり、専用Repoで \`factory-approved\` が付与されたときに限りWorkflowを実行。
-- 新Repo作成APIは \`POST /user/repos\` に固定し、\`private:true\`、\`auto_init:true\`、所有者・認証主体の照合を必須にする。公開のフォールバックはない。
-- \`repo_name\` の形式はサーバ側で検証。既存名は保存先の現在状態で照合し、衝突時は何も上書きしない。リトライ時は同じIssueの\`homepage\`を識別子として照合。
-- 新権限 \`repository_creation:write\`（2026-10-13追加）を持つ専用資格情報をAction Secretに保管する。既存Repoへの広い管理権限は初期段階で付与しない。
+- **受付はprivateの専用 `moyashimisosoup/app-factory` Repo**。公開のSession DeckのIssuesには申請本文を残さない。
+- Issue authorとapproval actorの双方が `moyashimisosoup` であり、専用Repoで `factory-approved` が付与されたときに限りWorkflowを実行。
+- 新Repo作成APIは `POST /user/repos` に固定し、`private:true`、`auto_init:true`、所有者・認証主体の照合を必須にする。公開のフォールバックはない。
+- `repo_name` の形式はサーバ側で検証。既存名は保存先の現在状態で照合し、衝突時は何も上書きしない。リトライ時は同じIssueの`homepage`を識別子として照合。
+- 承認後にIssueを編集し再承認しても、別名のリポジトリを作成しない。Action botが非公開Issueへ`APP_FACTORY_APPROVAL_LOCK_V1`を事前保存し、確認したslugを固定。書込み・読戻し失敗時は**作成を中止**する。
+- 新権限 `repository_creation:write`（2026-10-13追加）を持つ専用資格情報をAction Secretに保管する。既存Repoへの広い管理権限は初期段階で付与しない。
 - 失敗時に別のRepo名へ自動変更しない。Issueへ秘密・実セッションURL・学校情報などを書かない。
 - **空Repoの生成と初期コード配置は分ける**。最初はGitHubが用意する標準READMEのみ。追加ファイルはGithubコネクタの権限確認後に作成。
 - **APP-IDはGitHub全体台帳へ登録できた時点で確定**。番号を推測で振らない。別リポジトリへの公開・Pagesデプロイは別件の承認が必要。
@@ -34,15 +35,15 @@ ChatGPTがプロジェクト設定を自分で変更したり、ユーザー発�
 ### M1：ユーザーの一回限りの操作
 
 1. ブラウザで [GitHub 新規リポジトリ作成](https://github.com/new) を開く。
-2. Owner=\`moyashimisosoup\`、Repository name=\`app-factory\`、Visibility=**Private**、READMEを追加して作成する。
+2. Owner=`moyashimisosoup`、Repository name=`app-factory`、Visibility=**Private**、READMEを追加して作成する。
 3. ChatGPTに作成したRepoのURLを伝える。
-4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置し、CIと権限のない状態での動作を検証。
-5. ユーザーがGitHubの設定画面だけで専用fine-grained PATを作成し、Factory private Repoの\`APP_FACTORY_REPO_CREATOR\` Action Secretに登録する。ChatGPTにtoken文字列を渡さない。
-6. private Repoに\`factory-approved\`ラベルを一度用意する。
+4. ChatGPTが[ブートストラップコード](../bootstrap/app-factory/README.md)をprivate Repoルートに配置。`preflight.yml`がmain上のCIでテスト成功となることを確認。**秘密鍵なしでこの段階まで動く**。
+5. ユーザーがGitHubの設定画面だけで専用fine-grained PATを作成し、Factory private Repoの`APP_FACTORY_REPO_CREATOR` Action Secretに登録する。必要なのはRepo作成の`repository_creation:write`権限であり、既存Repoの削除・移管権限は付けない。ChatGPTにtoken文字列を渡さない。`APP_FACTORY_ISSUE_TOKEN`はGitHub Actions標準の`github.token`から自動供給され、手動設定不要。
+6. private Repoに`factory-approved`ラベルを一度用意する。
 
 ### M2：最初の実例
 
-- 最初は **未承認** Issueを1件作り、Repoが生成されていないことを確認。
+- 最初は **未承認** Issueを1件作り、Repoが生成されていないことを確認。Issueテンプレートの`example-learning-tool`は予約名なので誤って承認しても作成できない。
 - 実際に採用するアプリ案を承認してIssueへラベルを付ける。
 - Actionsログ・作成RepoのURLとprivate状態を検証する。
 - 再実行しても同じIssueから重複生成されないことをテストする。
