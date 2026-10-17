@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Public repository hygiene human dispositions. Empty pending list is intentional. Automatic scans never archive or approve decisions.",
+  "decisions": []
+}
