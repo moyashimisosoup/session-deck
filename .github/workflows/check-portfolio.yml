@@ -8,6 +8,8 @@ on:
       - 'docs/APP_PORTFOLIO.md'
       - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
       - 'portfolio.html'
+      - 'bootstrap/app-factory/**'
+      - 'docs/APP_FACTORY_LAUNCH_PLAN.md'
       - 'docs/REPO_HYGIENE_20261017.md'
       - 'docs/CLOUD_SESSION_PROTOCOL.md'
       - 'portfolio-ui.css'
@@ -53,6 +55,9 @@ jobs:
 
       - name: Validate private journal replay and idempotency
         run: python3 -m unittest discover -s tests -p 'test_private_journal.py' -v
+
+      - name: Validate App Factory private-only intake and idempotence offline
+        run: python3 -m unittest discover -s bootstrap/app-factory/scripts -p 'test_*.py' -v
 
       - name: Validate external UI JavaScript and accessibility hooks
         run: |
