@@ -1,0 +1,27 @@
+name: App Factory offline readiness tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate request parser and GitHub API safety offline
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Check that deployment and issue templates were installed
+        run: |
+          test -f scripts/create_repo.py
+          test -f .github/workflows/create-repo.yml
+          test -f .github/ISSUE_TEMPLATE/new-app.md
+          grep -q 'factory-approved' .github/workflows/create-repo.yml
+          grep -q 'APP_FACTORY_ISSUE_TOKEN' .github/workflows/create-repo.yml
+          echo "READY FOR CREDENTIAL CONFIGURATION (no real repository was created)."
