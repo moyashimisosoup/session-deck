@@ -1,9 +1,8 @@
 name: App Factory offline readiness tests
 
+# Invoke once explicitly after installation; avoid charging private Actions
+# minutes automatically on every configuration commit.
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
