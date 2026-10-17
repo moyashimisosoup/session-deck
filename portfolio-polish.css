@@ -175,3 +175,15 @@ h1{font-size:clamp(23px,2.8vw,31px);font-weight:750;letter-spacing:-.75px}
 @media(prefers-reduced-motion:reduce){
   .metric,.command-panel{transition:none!important}
 }
+
+/* Public protocol links and local-only copy controls; not an authenticated session editor. */
+.session-template-menu{position:relative;z-index:1;max-width:100%}
+.session-template-menu summary{display:flex;align-items:center;gap:8px;border:1px solid var(--line-dark);
+  border-radius:8px;padding:9px 12px;color:var(--primary);font-size:11px;font-weight:750;
+  background:var(--surface);cursor:pointer;list-style:none;min-height:34px}
+.session-template-menu summary::-webkit-details-marker{display:none}
+.session-template-menu[open] summary{border-color:var(--primary)}
+.session-template-buttons{display:flex;gap:7px;flex-wrap:wrap;padding:8px 0}
+.session-template-buttons .footer-button{background:var(--surface);min-height:36px}
+@media(max-width:720px){.session-template-menu{width:100%}.session-template-buttons{flex-direction:column}
+.session-template-buttons button{text-align:left}}
