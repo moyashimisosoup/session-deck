@@ -66,7 +66,7 @@ function simulateChatGPT(){
   const chrome={runtime:{onMessage:{addListener(fn){listener=fn;}}},
     storage:{local:{get:async k=>({[k]:store[k]}),set:async items=>Object.assign(store,items)}}};
   const loc={href:'https://chatgpt.com/c/'+id};
-  const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},
+  const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},HTMLInputElement:class {},
     InputEvent:class{constructor(type,props){this.type=type;this.props=props}},
     Event:class{constructor(type){this.type=type}},setTimeout,clearTimeout,console};
   input.dispatchEvent=()=>{};
