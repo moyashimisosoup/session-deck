@@ -10,6 +10,7 @@ on:
       - motion.js
       - motion.css
       - portfolio.html
+      - naming.html
       - portfolio-ui.css
       - portfolio-ui.js
       - portfolio-polish.css
@@ -57,6 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
+          cp naming.html _site/
           cp index.html styles.css app.js motion.css motion.js portfolio.html portfolio-ui.css portfolio-ui.js portfolio-polish.css portfolio-shortcuts.js repo-hygiene-ui.js _site/
           mkdir -p _site/docs
           cp docs/APP_PORTFOLIO.md _site/docs/
@@ -65,6 +67,7 @@ jobs:
           test -s _site/app.js
           test -s _site/motion.js
           test -s _site/motion.css
+          test -s _site/naming.html
           test -s _site/portfolio.html
           test -s _site/portfolio-ui.css
           test -s _site/portfolio-ui.js
@@ -111,6 +114,7 @@ jobs:
           test ! -e _site/docs/PRIVATE_SESSION_STORE_PLAN.md
           test ! -e _site/private-session-events.json
           test ! -e _site/owner-vault
+          test ! -e _site/extensions
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
