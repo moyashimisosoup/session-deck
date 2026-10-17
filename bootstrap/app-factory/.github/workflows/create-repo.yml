@@ -26,10 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Preflight offline safety tests (no secret required)
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
       - name: Validate adopted issue and create PRIVATE repository
         id: factory
         env:
           APP_FACTORY_ISSUE_BODY: ${{ github.event.issue.body }}
+          APP_FACTORY_ISSUE_TOKEN: ${{ github.token }}
           APP_FACTORY_REPO_CREATOR: ${{ secrets.APP_FACTORY_REPO_CREATOR }}
         run: python3 scripts/create_repo.py --issue "${{ github.event.issue.number }}" --execute
 
