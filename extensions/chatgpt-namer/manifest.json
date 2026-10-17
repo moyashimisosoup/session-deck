@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Session Deck Namer (manual)",
+  "version": "0.2.0",
+  "description": "Rename only the active ChatGPT Web conversation after an explicit user action and UI verification.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Session Deck Namer"
+  }
+}
