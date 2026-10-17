@@ -119,3 +119,21 @@
 | SE-04 | iPhone Safari実機でのコピー、専用アプリの起動時刻自動収集、他AIとの継続同期 | **未実装または未確認**。自動記録できたとは報告しない |
 
 **更新方針**：PR CI、mainマージ、Pages再配信は別々に検証し、成功した項目だけ記録する。Repoの整理候補は自動Archive/Deleteしない。
+
+
+## 定期公開Repo衛生監査＋非公開イベントPoC（2026-10-17）
+
+| ID | 判定 | 証拠 |
+| --- | --- | --- |
+| HY2-01 | PASS | [PR #6](https://github.com/moyashimisosoup/session-deck/pull/6) をmainへマージ。PR CIで既存GitHub観測の回帰試験・新しいRepo衛生監査のプライバシーテスト・非公開イベントバリデーション・UIのJS構文が成功 |
+| HY2-02 | PASS | [Pages Actions #38988905429](https://github.com/moyashimisosoup/session-deck/actions/runs/38988905429)：既存収集・新監査・非公開イベントのオフラインテスト・Pages配信すべて成功 |
+| HY2-03 | PASS | 公開 [repo-hygiene.json](https://moyashimisosoup.github.io/session-deck/data/repo-hygiene.json) を読戻し。公開17Repo・要確認候補7件を検出。非公開Repoの項目や名前は出力対象に含めず、GitHubのArchive/Deleteを実施しない |
+| HY2-04 | PASS | 公開UIのブラウザ操作で「整理候補7件」→「全17件」の切替に成功。旧soba-priceに「同名Repo」「台帳未登録」が表示 |
+| HY2-05 | PARTIAL | GitHub Actions定期cronは設定済み。2026-10-17時点で**後日の定期実行と通知配信を継続的に確認したものではない** |
+| PV-01 | PASS | 接続Google Driveに所有者限定のSession Deck専用フォルダとGoogle Docを作成、shared=false・permission owner 1件を読戻し確認。**Driveの実IDは公開GitHub・Pagesに書かない** |
+| PV-02 | PASS | 非公開DocにPROBEダミーイベントを追記後、本文を読戻し。実セッションや機密情報は未保存 |
+| PV-03 | PASS | Pythonオフラインイベント検証でAPP-IDとwork_idの対応、捏造日時の拒否、未知フィールド拒否、重複event_id拒否を確認 |
+| PV-04 | NOT IMPLEMENTED | 非公開Docへの**本当のAIセッション**の自動記録、ChatGPT開始／終了時刻の自動取得、Session Deckからの認証付き閲覧 |
+| PV-05 | NOT VERIFIED | 複数AIの同時追記、更新衝突の検知・復旧、Google Drive権限取消、バックアップ／復元、iPhone Safariの非公開UI操作 |
+
+**証跡の区別**：ダミーのprivate store保存成功と、ChatGPT/Codex/Claude Codeの実セッション連携成功は別。Repoの最終pushから開発停止を推測しない。検出された候補は人の判断が必要。
