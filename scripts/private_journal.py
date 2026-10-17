@@ -115,6 +115,11 @@ def summarize_work(events: list[dict]) -> list[dict]:
         if state["app_id"] != event["app_id"]:
             raise ValueError("Work ID reused across apps")
         sid = event["session_id"]
+        previous = state["sessions"].get(sid)
+        if previous and previous["last_event_type"] == "END":
+            raise ValueError("Ended session cannot accept subsequent events")
+        if previous and event["event_type"] == "START":
+            raise ValueError("Session START already recorded")
         session = state["sessions"].setdefault(sid, {
             "session_id": sid, "platform": event["platform"],
             "started_at": None, "ended_at": None, "last_recorded_at": None,
@@ -135,7 +140,7 @@ def summarize_work(events: list[dict]) -> list[dict]:
             session["time_verified"] = True
         state["last_event_type"] = typ
         state["last_recorded_at"] = _when(event["recorded_at"])
-        state["has_verified_event_time"] = bool(timestamp)
+        state["has_verified_event_time"] = state["has_verified_event_time"] or bool(timestamp)
         # Missing optional text must never erase previously verified data.
         for field in ("summary","next_action","repository","branch","head_sha"):
             if field in event and event[field] is not None:
