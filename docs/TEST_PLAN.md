@@ -151,3 +151,19 @@
 | PJ-06 | 未実装 | 本物のユーザーセッションの自動START・END時刻取得、秘密データの自動Sync、認証付きの独立Web画面、バックアップ・複数AIの同時書込み |
  
 **漏洩禁止**：試験用Google Driveの実ファイルID・フォルダID・本文は公開Repo・Pages・PRコメントに保存しない。GitHub CIにはダミーのコード上のフィクスチャだけを渡す。
+
+
+## Private Journal v0.2 の統合検証（2026-10-17）
+
+| ID | 結果 | 根拠 |
+| --- | --- | --- |
+| PJ2-01 | PASS | [PR #7](https://github.com/moyashimisosoup/session-deck/pull/7) の[Actions #38990565902](https://github.com/moyashimisosoup/session-deck/actions/runs/38990565902)でPython既存回帰・非公開イベント検査・17件のイベント履歴再生試験・UI構文と必要フック確認がすべて成功 |
+| PJ2-02 | PASS | [Pages #38990599928](https://github.com/moyashimisosoup/session-deck/actions/runs/38990599928)で公開GitHub観測・Repo整理・私的履歴のオフライン検査・公開配信に成功 |
+| PJ2-03 | PASS | 公開Pagesの`/scripts/private_journal.py`と`/docs/PRIVATE_SESSION_STORE_PLAN.md`はHTTP 404。認証付きDocの実IDとイベント本文は公開ファイル内へ書き込まない |
+| PJ2-04 | PASS | 所有者限定のGoogle Docに架空`APP-001-W9999`のSTART・CHECKPOINT・HANDOFFを各1件保存して読戻し。重複なし。古いrevisionによる追記は拒否され、文書本文・revision不変 |
+| PJ2-05 | PASS | 所有者限定「Work Resume View | Pilot」へ架空イベントから再開状態を投影。HANDOFFと次の一手を示し、開始・終了は未確認。文書共有設定shared=false・所有者1名を読戻し |
+| PJ2-06 | PASS | 公開UIでテンプレート展開から「再開・復元をコピー」を確認、APP-001詳細で「このアプリの引継ぎを復元」を確認。21アプリ、Repo整理候補7件を維持 |
+| PJ2-07 | 未確認 | コピーが実際にクリップボードへ正しく書き込めること、別のAIセッションが認証済みDrive検索→読み込み→復元まで完走すること、iPhone操作 |
+| PJ2-08 | 未実装 | 実ChatGPT/Codex/Claude Codeのイベント自動収集と、非公開の認証付き自動更新画面 |
+
+この段階で**オンラインストアの条件付き追記と読戻しは実証済み**、しかし独立したWebアプリからの認証付き自動同期や実データの導入は未完成。自動Archive/Deleteも行わない。
