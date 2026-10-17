@@ -8,7 +8,7 @@
 - **初期実装：** [PR #1](https://github.com/moyashimisosoup/app-factory/pull/1)（Public向けスキーマ、作成Worker、GitHub Actions、CI、Issueテンプレート）
 - **構文修正：** [PR #2](https://github.com/moyashimisosoup/app-factory/pull/2)（GitHub Actions YAMLエラー修正と回帰対策）
 - **検証済み：** [最新main CI](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930675) および [事前検査・承認ラベル準備](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930717) が成功。
-- **未完了：** 所有者によるGitHub Actions Secret `APP_FACTORY_REPO_CREATOR`の設定と、**実際の新Private Repo作成の疎通確認**。Secretの存在は接続GitHubツールでは照合できないため、実生成を確認するまでは稼働完了とはしない。
+- **初回の実生成成功（2026-10-17）：** ユーザーがGitHub Actions Secret `APP_FACTORY_REPO_CREATOR`を登録後、[公開Issue #4](https://github.com/moyashimisosoup/app-factory/issues/4)に本人承認ラベルを付与。[Actions #39026244548](https://github.com/moyashimisosoup/app-factory/actions/runs/39026244548)がsuccess、本人GitHub接続で新Repoの実在・Private設定・main/READMEを確認した。公開IssueへPrivate Repo URLは出さない。Secret値・有効期限は取得していない。
 - この文書よりも**稼働リポジトリの[README](https://github.com/moyashimisosoup/app-factory/blob/main/README.md)**を優先する。Session Deckの[旧Privateブートストラップ](../bootstrap/app-factory/README.md)は履歴資料であり、現在の公開Factoryへ再導入しない。
 
 ## ChatGPTからの操作経路
@@ -31,12 +31,12 @@
 6. Creator用fine-grained PATは `repository_creation:write` の最小権限で**GitHub Actions Secret**にのみ保管。ChatGPTへトークンの値を渡さない。作成専用トークンと既存Repo編集権限は別。
 7. 新Repo作成、初期ファイル配置、台帳登録、Pages公開は別マイルストーン。作成済みの根拠を取得するまでは完了扱いにしない。
 
-## 最後の有効化手順
+## 次の採用案でも使う手順（初回生成は実証済み）
 
 1. `moyashimisosoup`で[GitHub fine-grained PAT設定](https://github.com/settings/personal-access-tokens)を開き、**Repository creation: Read and write**だけを中心にした期限付きトークンを発行する。不要なAdministration/Deletion/Transfer系の権限は付けない。
 2. [App FactoryのActions Secrets設定](https://github.com/moyashimisosoup/app-factory/settings/secrets/actions)から `APP_FACTORY_REPO_CREATOR` を登録する。**値をチャットに貼らない**。
 3. 非機密で新規名の実際の採用案件を公開Issueで登録し、重複がないことを確認する。
-4. 本人承認により`factory-approved`ラベルを付け、[Actions](https://github.com/moyashimisosoup/app-factory/actions)の`App Factory private repository creation`結果を確認する。
+4. 本人承認により`factory-approved`ラベルを付け、[Actions](https://github.com/moyashimisosoup/app-factory/actions)の`App Factory private repository creation`結果を確認する。 2026-10-17にはこれをIssue #4で実施・成功した。
 5. 作成先Repoを所有者の認証済みGitHubで開き、Visibility Private、デフォルトREADME、重複がないことを確認する。その後、必要なスターター構成やAPP-ID登録を進める。
 
 `factory-approved`ラベルは[main事前検査](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930717)で準備するので、通常は手動作成不要。
