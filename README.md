@@ -18,6 +18,13 @@ python -m http.server 8000
 
 GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → Source: GitHub Actions`。 [公開・週次収集ワークフロー](.github/workflows/deploy-pages.yml) が `index.html` / `styles.css` / `app.js` / `portfolio.html` / 公開用台帳 / **生成された公開GitHub観測JSON**のみをステージングして配信します。**毎週月曜10:17（JST）頃に再収集**し、対象ファイルへのpushやGitHub Actionsの `Run workflow` でも実行できます（GitHub側で実行遅延の可能性あり）。公開URL: https://moyashimisosoup.github.io/session-deck/ 。配信後は実URLを読み戻して確認してください。
 
+## Repo整理・クラウドセッション継続運用（2026-10-17）
+
+- [公開Repoの整理候補](docs/REPO_HYGIENE_20261017.md)：2アカウントのRepoを棚卸しし、重複・公開Repoの長期間未push・空に近いRepoを**候補**として記載しました。無人でArchive/Deleteはしません。
+- [非ローカルSession運用規則](docs/CLOUD_SESSION_PROTOCOL.md)：APP-ID / work_id / session_id の分離、推奨チャット名、START・CHECKPOINT・HANDOFF・END、実測時刻と未確認の区別、TradingSystemの段階的寿命管理を参考にした引継ぎ原則。
+- [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
+- 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
+
 ## アプリ台帳（実データの読取り専用画面）
 
 - [アプリ台帳を開く](portfolio.html) ／ [台帳の正本](docs/APP_PORTFOLIO.md)
