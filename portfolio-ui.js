@@ -193,6 +193,25 @@
     if(app.repo) {
       const repo=safeLink(app.repo,'リポジトリ ↗');if(repo)links.append(repo);
     }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      const startCommand=[
+        '【Session START】アプリ「'+app.name+'」の作業開始メタデータを表示してください。',
+        'APP-ID: '+app.id,
+        '正本GitHub Repo: '+(app.repo || '未照合。正本を確認するまで作業先を決めない'),
+        '現在の台帳記録: '+app.stage,
+        '前回の次の一手: '+(app.next || '未記載'),
+        '既存のwork_idと引継ぎ記録を先に確認。見つからない場合は暫定番号として表示し、正本台帳の重複を調べてから登録。',
+        '推奨チャット名: 〖短い作業名〗MMDD・NN・具体的内容。実際のチャットタイトルは自動改名したとみなさない。',
+        '開始時刻JSTは確認できた時刻のみ記録。開始時刻の自動取得・記録先への保存ができなければ「未確認・未保存」と明示する。',
+        '作業開始前に正本の現行branch/HEAD、関連PRとCIを再確認。重要な節目と引継ぎ時のみCHECKPOINTを更新。',
+        '実会話URLや機微情報は公開GitHub Pagesへ保存しない。',
+        '共通規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CLOUD_SESSION_PROTOCOL.md'
+      ].join('\n');
+      const startButton=node('button','copy-review','このアプリの開始指示をコピー');
+      startButton.type='button';
+      attachCopy(startButton,startCommand,'開始指示をコピーしました ✓');
+      links.append(startButton);
+    }
     if(commit && commit.url){const commitLink=safeLink(commit.url,'最終コミット ↗');if(commitLink)links.append(commitLink);}
     if(obs && obs.review_status==='pending' && typeof obs.review_compare_url==='string' && allowedCompare.test(obs.review_compare_url)){
       const diff=safeLink(obs.review_compare_url,'確認基準からの差分 ↗');if(diff)links.append(diff);
