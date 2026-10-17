@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>命名コンソール | Session Deck</title>
+<meta name="description" content="ChatGPT・Claude Code・Codexのセッション名を一つの規則で生成し、コピーする。">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;color:#1e293b;background:#f5f7fa;--blue:#3f5ed9;--line:#dfe6f0}
+*{box-sizing:border-box}body{margin:0;line-height:1.6}button,input,select{font:inherit}button{cursor:pointer}a{color:var(--blue)}header{border-bottom:1px solid var(--line);background:#fff}
+.head{margin:auto;max-width:1010px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 22px}
+.brand{text-decoration:none;color:#1b2b43;font-weight:800;letter-spacing:-.4px}.brand span{color:var(--blue)}.tag{font-size:11px;background:#edf1ff;color:#465cb4;border-radius:999px;padding:3px 9px;font-weight:800}
+main{width:min(1010px,100%);margin:0 auto;padding:36px 22px 70px}
+h1{font-size:clamp(27px,5vw,38px);line-height:1.2;margin:0 0 12px;letter-spacing:-1px}h2{font-size:17px;margin:0 0 15px}
+.lead{color:#6a7788;font-size:14px;max-width:710px;margin:0 0 28px}
+.layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:25px;box-shadow:0 6px 24px #28334808}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}
+label{display:block;color:#4f6074;font-size:12px;font-weight:750;margin:0 0 7px}
+input,select{display:block;width:100%;border:1px solid #cfdae7;background:#fff;color:#16243a;border-radius:10px;padding:12px 13px;min-height:45px;outline-offset:2px}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #a6b4ff;outline-offset:2px}
+.help{font-size:11px;color:#778698;margin:6px 0 0}.preview-label{font-size:11px;color:#71829a;font-weight:800;letter-spacing:1.1px}
+.preview{margin:9px 0 14px;overflow-wrap:anywhere;font-size:18px;font-weight:800;min-height:80px;line-height:1.6}
+.output{padding:15px;background:#f5f7ff;border:1px solid #e3e9ff;border-radius:10px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.button{border:1px solid #d9e0eb;background:#fff;color:#40506a;border-radius:10px;padding:10px 13px;min-height:44px;font-size:13px;font-weight:750}
+.button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.button:disabled{opacity:.5;cursor:not-allowed}.button:active:not(:disabled){transform:scale(.985)}
+.status{font-size:12px;min-height:25px;color:#376a51;margin:12px 0 0}
+.status.error{color:#ad464d}.muted{font-size:12px;color:#6f8092}
+.platform{border:1px solid #e4eaf2;border-radius:12px;padding:14px 16px;margin-top:12px}
+.platform strong{display:block;font-size:14px;margin-bottom:5px}.platform p{margin:0 0 9px;font-size:12px;color:#607185}
+.platform .button{width:100%}
+.notice{margin-top:18px;color:#68788c;background:#edf2f9;padding:13px 16px;border-radius:11px;font-size:12px}
+code{background:#f2f5fa;padding:2px 4px;border-radius:4px;word-break:break-word}
+@media(max-width:730px){main{padding:27px 15px 40px}.layout{grid-template-columns:1fr}.panel{padding:20px}.head{padding:12px 15px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.preview{font-size:17px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header><div class="head"><a class="brand" href="./index.html">session<span>deck</span></a><span class="tag">SESSION NAMING / v1</span></div></header>
+<main>
+<p class="preview-label">SESSION DECK / NAMING CONSOLE</p>
+<h1>セッション名を、<br>同じルールで。</h1>
+<p class="lead">ChatGPT、Claude Code、Codexの名前を統一します。名前を作ってコピーする操作はスマートフォンでも利用可能。外部サービスの名称変更そのものは、各サービスの画面で行います。</p>
+<div class="layout">
+<section class="panel" aria-labelledby="formHeading">
+<h2 id="formHeading">1. 名前を組み立てる</h2>
+<form id="namingForm" novalidate>
+<div class="form-grid">
+<div><label for="group">短い作業名</label><input id="group" name="group" maxlength="20" placeholder="例：命名管理" value="命名管理" autocomplete="off" required></div>
+<div><label for="date">日付（JST / MMDD）</label><input id="date" name="date" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="1017" required><p class="help">本日の日付を初期値に設定。必要なら変更できます。</p></div>
+<div class="full"><label for="workId">作業番号</label><input id="workId" name="workId" maxlength="30" value="SD-012" placeholder="例：SD-012" autocomplete="off" required></div>
+<div class="full"><label for="detail">具体的内容</label><input id="detail" name="detail" maxlength="70" value="セッション命名機能" placeholder="例：セッション命名機能" autocomplete="off" required></div>
+</div>
+</form>
+<div style="margin-top:20px">
+<label for="chatUrl">ChatGPTの会話URL（任意 / 非ローカル会話用）</label>
+<input type="url" id="chatUrl" name="chatUrl" placeholder="https://chatgpt.com/c/..." autocomplete="off" spellcheck="false">
+<p class="help">iPhone・別PCのChatGPTでも同じ会話を開けます。URLはサーバーに送信せず、保存もしません。</p>
+<div class="actions"><button type="button" class="button" id="openChat" disabled>対象チャットを開く ↗</button></div>
+<p id="urlStatus" class="help" role="status" aria-live="polite">会話URLを入力すると「対象チャットを開く」が利用できます。</p>
+</div>
+<div class="notice">入力内容はこのページからサーバーへ送信されません。自動保存も行いません。実会話IDや認証情報は入力しないでください。</div>
+</section>
+<section class="panel" aria-labelledby="outputHeading">
+<h2 id="outputHeading">2. コピーして適用する</h2>
+<div class="output"><div class="preview-label">正式名称</div><div id="preview" class="preview" aria-live="polite"></div><p id="validation" class="muted"></p></div>
+<div class="actions"><button type="button" id="copyTitle" class="button primary">正式名をコピー</button><button type="button" id="copyCommand" class="button">/renameをコピー</button></div>
+<p id="copyStatus" class="status" role="status" aria-live="polite"></p>
+<div class="platform"><strong>ChatGPT（iPhoneアプリ / Web）</strong><p>正式名をコピーして、対象チャットのメニューから「名前を変更」を選んで貼り付けます。PC Web版では別途ブラウザ拡張による改名支援も利用できます。</p><button class="button" type="button" data-copy="title">ChatGPT用に名前をコピー</button></div>
+<div class="platform"><strong>Claude Code / Codex CLI</strong><p>対象セッション内に <code>/rename 名前</code> を入力します。拡張機能や認証情報は不要です。</p><button class="button" type="button" data-copy="command">CLI用コマンドをコピー</button></div>
+<div class="platform"><strong>変更結果の確認</strong><p>実際のサービスで表示名が変わったことを確認してください。このページでは外部サービスでの保存・同期・変更成功を検証できません。</p></div>
+</section>
+</div>
+<p class="muted" style="margin-top:22px">実運用のセッション名には <code>【短い作業名】MMDD・作業番号・具体的内容</code> を使用します。自動改名やID連携はサービス別の実機検証後に有効化します。</p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const el = id => document.getElementById(id);
+  const fields=['group','date','workId','detail'];
+  const now = new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  el('date').value=now.find(x=>x.type==='month').value+now.find(x=>x.type==='day').value;
+  let title='';
+  const normalize=v=>String(v||'').replace(/[\r\n\t]/g,' ').trim();
+  function dateValid(v){
+    if(!/^[0-9]{4}$/.test(v))return false;
+    const m=Number(v.slice(0,2)),d=Number(v.slice(2,4));
+    return m>=1&&m<=12&&d>=1&&d<=new Date(2024,m,0).getDate();
+  }
+  function update(){
+    const g=normalize(el('group').value),d=normalize(el('date').value),w=normalize(el('workId').value),t=normalize(el('detail').value);
+    const valid=!!(g&&g.length<=20&&!/[【】・]/.test(g)&&dateValid(d)&&w&&w.length<=30&&!/[\s・【】]/.test(w)&&t.length>=2&&t.length<=70&&!/[\r\n]/.test(t));
+    title=valid?'【'+g+'】'+d+'・'+w+'・'+t:'';
+    el('preview').textContent=title||'入力を確認してください';
+    el('validation').textContent=valid?'すべての必須項目が揃っています。':'作業名・番号・内容・日付の形式を確認してください。';
+    el('copyTitle').disabled=el('copyCommand').disabled=!valid;
+    document.querySelectorAll('[data-copy]').forEach(button=>button.disabled=!valid);
+    el('copyStatus').textContent='';
+  }
+  async function copy(value){
+    if(!title)return;
+    const t=value==='command'?'/rename '+title:title;
+    try{
+      if(!navigator.clipboard?.writeText)throw Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(t);
+      el('copyStatus').textContent=value==='command'?'コマンドをコピーしました。':'正式名称をコピーしました。';
+      el('copyStatus').classList.remove('error');
+    }catch(_error){
+      el('copyStatus').textContent='自動コピーできませんでした。表示された文字列を手動でコピーしてください。';
+      el('copyStatus').classList.add('error');
+      window.prompt('この文字列をコピーしてください',t);
+    }
+  }
+  function canonicalChatURL(){
+    const input=el('chatUrl').value.trim();
+    if(!input)return null;
+    try{
+      const url=new URL(input);
+      if(url.protocol!=='https:'||url.hostname!=='chatgpt.com'||url.username||url.password)return null;
+      // Strip query and fragment. Reject public sharing links and unrelated destinations.
+      if(!/^\\/(?:g\\/g-[a-z0-9-]+\\/)?c\\/[a-z0-9-]{8,}\\/?$/i.test(url.pathname))return null;
+      return 'https://chatgpt.com'+url.pathname;
+    }catch{return null;}
+  }
+  function updateChatURL(){
+    const url=canonicalChatURL();
+    el('openChat').disabled=!url;
+    el('urlStatus').textContent=url?'対象URLを確認しました。本人がログインしているChatGPTで開きます。':'URL未指定・形式不一致。ChatGPTの個別会話URL（/c/）を入力してください。';
+  }
+  el('chatUrl').addEventListener('input',updateChatURL);
+  el('openChat').addEventListener('click',()=>{
+    const url=canonicalChatURL();
+    if(!url)return;
+    window.open(url,'_blank','noopener,noreferrer');
+  });
+  updateChatURL();
+  fields.forEach(id=>el(id).addEventListener('input',update));
+  el('copyTitle').addEventListener('click',()=>copy('title'));
+  el('copyCommand').addEventListener('click',()=>copy('command'));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>copy(b.dataset.copy)));
+  update();
+})();
+</script>
+</body>
+</html>
