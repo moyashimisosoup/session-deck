@@ -53,6 +53,12 @@ APP-007 / APP-007-Wnnnn（未割当なら未割当）
 - **TradingSystem**：実測のコンテキスト量があるClaude/Codex監視では既存`CHECKPOINT/HANDOFF_READY/ROTATION_DUE`を優先。
 - **ChatGPT**：コンテキスト使用率を取得できない限り具体的％を出さず、ユーザーが移行を希望したとき・重要な区切り・長文作業の終盤でチェックポイントを作る。
 
+## 5.1 長い会話の早期引継ぎ
+
+小さな毎回答の進捗バーに加え、[予防的な引継ぎ規則](CHATGPT_EARLY_ROTATION_POLICY.md)を適用する。重要な進捗が前回CHECKPOINT以降2〜3件になった場合や、古い仕様との混同・次の重い作業への着手前は、**コンテキスト使用率とは無関係に**CHECKPOINTとHANDOFF_READYを検討する。Session Deck非公開ストアへの書込み・読戻しができた場合だけ「保存済み」と記載する。
+
+ChatGPTプロジェクト設定へ追加する[最新の貼り付け用指示](CHATGPT_PROJECT_INSTRUCTIONS.md)を正本とし、この文書の§3にある以前の短い追記は**旧版として扱う**。重複して両方を貼らないこと。
+
 ## 6. kotenの導入例
 
 - APP-007の公開コード：`yama-books/koten`。
