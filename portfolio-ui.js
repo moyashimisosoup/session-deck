@@ -351,6 +351,16 @@
       '実際に書込・読戻しができた場合のみ「保存済み」と報告する。公開Pagesへ実チャットIDやURLを載せない。',
       '共通規則: '+protocol
     ].join('\n');
+    const progressRule=[
+      '【Session Deck / 1行進捗表示】以後このアプリ開発チャットで実質的な作業回答をするとき、末尾に次の1行だけ付けてください。',
+      '◦ APP-ID/アプリ名:作業領域｜状態｜確認したJST時刻（観測・保存の区別）｜証拠（PR・commit・未保存）｜次の具体的1操作',
+      '登録されていないwork_id・未取得の開始/終了時刻・コンテキスト利用率・進捗%は捏造しない。',
+      '毎回答の表示は1行だけ。長いSTART / CHECKPOINT / HANDOFF / ENDの記録は重要な節目だけ行う。',
+      '実チャットのログや非公開セッションID・リンクを公開Pagesや公開GitHubへ保存しない。',
+      'GitHubの最終pushとチャットの最終活動を混同しない。',
+      '共通の表示規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CHAT_PROGRESS_BAR.md'
+    ].join('\\n');
+    attachCopy($('copyProgressBar'),progressRule,'進捗表示ルールをコピーしました ✓');
     attachCopy($('copySessionStart'),startTemplate,'開始テンプレをコピーしました ✓');
     const resumeTemplate=[
       '【Session RESUME / READ ONLY】このセッションに関連する非公開引継ぎの現在地を復元してください。',
