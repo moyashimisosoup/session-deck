@@ -16,6 +16,8 @@ on:
       - 'scripts/scan_repo_hygiene.py'
       - 'tests/test_repo_hygiene.py'
       - 'scripts/validate_private_event.py'
+      - 'scripts/private_journal.py'
+      - 'tests/test_private_journal.py'
       - 'tests/test_validate_private_event.py'
       - 'docs/REPO_HYGIENE_DECISIONS.json'
       - 'portfolio-polish.css'
@@ -48,6 +50,9 @@ jobs:
 
       - name: Validate private-event schema offline only
         run: python3 -m unittest discover -s tests -p 'test_validate_private_event.py' -v
+
+      - name: Validate private journal replay and idempotency
+        run: python3 -m unittest discover -s tests -p 'test_private_journal.py' -v
 
       - name: Validate external UI JavaScript and accessibility hooks
         run: |
