@@ -90,10 +90,10 @@ jobs:
               raise SystemExit('Hygiene UI must use public snapshot and safe DOM insertion')
           if ':root[data-theme="dark"]' not in polish or 'prefers-reduced-motion' not in polish:
               raise SystemExit('Dark theme or motion reduction missing')
-          for hook in ['id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md']:
+          for hook in ['id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionResume"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md']:
               if hook not in html:
                   raise SystemExit('Missing session audit tool hook: '+hook)
-          for label in ['copySessionStart','copySessionCheckpoint','copySessionEnd','attachCopy(']:
+          for label in ['copySessionStart','copySessionCheckpoint','copySessionResume','copySessionEnd','attachCopy(','このアプリの引継ぎを復元']:
               if label not in script:
                   raise SystemExit('Missing session template wiring: '+label)
           protocol=Path('docs/CLOUD_SESSION_PROTOCOL.md').read_text(encoding='utf-8')
