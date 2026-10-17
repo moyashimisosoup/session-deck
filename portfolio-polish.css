@@ -187,3 +187,24 @@ h1{font-size:clamp(23px,2.8vw,31px);font-weight:750;letter-spacing:-.75px}
 .session-template-buttons .footer-button{background:var(--surface);min-height:36px}
 @media(max-width:720px){.session-template-menu{width:100%}.session-template-buttons{flex-direction:column}
 .session-template-buttons button{text-align:left}}
+
+/* Review candidates: calm, evidence-first list */
+.hygiene-panel{margin-top:17px}
+.hygiene-description{padding:0 20px 15px;color:var(--muted);font-size:11px;line-height:1.7}
+.hygiene-row{display:grid;grid-template-columns:minmax(170px,1fr) minmax(160px,.8fr) minmax(260px,1.5fr);gap:10px 20px;
+  padding:12px 20px;border-top:1px solid var(--line);align-items:center;min-height:55px}
+.hygiene-title{display:flex;flex-wrap:wrap;align-items:center;gap:7px;min-width:0}
+.hygiene-title a{font-size:12px;font-weight:700;overflow-wrap:anywhere;text-decoration:none;color:var(--ink)}
+.hygiene-title a:hover{text-decoration:underline;color:var(--primary)}
+.hygiene-appid{color:var(--sub);font-size:10px}
+.hygiene-meta{font-size:11px;color:var(--muted);line-height:1.5}
+.hygiene-flags{display:flex;flex-wrap:wrap;gap:6px}
+.hygiene-flag{font-size:10px;padding:3px 7px;border-radius:5px;background:var(--blue-pale);color:var(--primary);font-weight:640}
+.hygiene-clean{font-size:10px;color:var(--sub)}
+.hygiene-footer{border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:18px;flex-wrap:wrap}
+.hygiene-footer a{font-size:11px;color:var(--primary);text-decoration:none}
+.hygiene-footer a:hover{text-decoration:underline}
+.hygiene-empty{font-size:12px;color:var(--muted);padding:8px 20px}
+@media(max-width:880px){.hygiene-row{grid-template-columns:minmax(170px,1fr) minmax(150px,1fr)}.hygiene-flags{grid-column:1/-1}}
+@media(max-width:600px){.hygiene-row{grid-template-columns:1fr;padding:12px 14px;gap:7px}.hygiene-flags{grid-column:auto}
+  .hygiene-description,.hygiene-footer{padding-left:14px;padding-right:14px}}

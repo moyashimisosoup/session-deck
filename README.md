@@ -25,6 +25,13 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
 - 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
 
+## 自動Repo衛生監査と非公開セッション保存PoC（2026-10-17）
+
+- [アプリ台帳](portfolio.html)の「リポジトリの整理候補」に、2アカウントの**公開Repo限定**の週次チェックを追加しました。名前の一致、アプリ台帳未登録、最終pushの経過（30/60/90日）、空に近い初期状態を検知します。公開可能なメタデータだけを[生成JSON](https://moyashimisosoup.github.io/session-deck/data/repo-hygiene.json)に配信します。
+- 確認結果は[REPO_HYGIENE_DECISIONS.json](docs/REPO_HYGIENE_DECISIONS.json)に明示的な証拠と日時で記録でき、自動検出だけでArchive/Deleteはしません。公開GitHubに登録された非公開Repoの情報は収集結果へ含めません。
+- [非公開イベント保存PoC](docs/PRIVATE_SESSION_STORE_PLAN.md)では、所有者限定のGoogle DriveフォルダとGoogle Docを作成し、ダミーの書込み・読戻し・権限確認を実施。実会話の自動記録／ChatGPT開始時刻の自動取得／非公開管理UIは**未実装**。
+- [イベント形式バリデータ](scripts/validate_private_event.py)は**ネットワークも保存も行わない**純粋な形式検査です。CIには架空データしか渡しません。非公開の実イベントを公開リポジトリへコミットしないでください。
+
 ## アプリ台帳（実データの読取り専用画面）
 
 - [アプリ台帳を開く](portfolio.html) ／ [台帳の正本](docs/APP_PORTFOLIO.md)

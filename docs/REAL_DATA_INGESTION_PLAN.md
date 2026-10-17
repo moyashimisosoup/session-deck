@@ -7,6 +7,9 @@
 - 基礎: [CONCEPT.md](CONCEPT.md)・[INTEGRATION_PLAN.md](INTEGRATION_PLAN.md)・[ROADMAP.md](ROADMAP.md)
 - 原則: 既存のTradingSystemのMASTER/AGENTS/SESSION_LIFECYCLEを改変せず、必要なメタデータだけを読み取る。
 
+
+> **実装状態の更新（2026-10-17）**：本書は初期の計画案です。公開GitHub13Repo観測はすでに稼働し、公開Repoの重複・未push期間の定期監査も [scan_repo_hygiene.py](../scripts/scan_repo_hygiene.py) に実装済みです（継続稼働はActionsとPagesで別途検証）。非公開側は、Google Driveの所有者限定フォルダと試験用Docの作成・書込み・読戻しに成功した疎通PoCです。ChatGPT・Claude Code・Codexの実セッション自動取得／認証付き管理UIは未実装。詳細は [PRIVATE_SESSION_STORE_PLAN.md](PRIVATE_SESSION_STORE_PLAN.md) に記載します。
+
 ## 1. ゴールと非ゴール
 
 **ゴール**: 「どの作業を、どのAI・どのセッションが担当し、何の証拠に基づいて、最後にいつ更新されたのか」をPCとiPhoneから安全に確認できる状態を作る。全会話の複製ではなく、`work_id`中心の疎結合な作業台帳を作る。

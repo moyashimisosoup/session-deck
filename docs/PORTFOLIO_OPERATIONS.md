@@ -123,3 +123,17 @@
 2. APP-IDとSession Deckのwork_idを対応づける。ただし「アプリ」「作業」「セッション」は別エンティティ。
 3. 一覧から詳細履歴、最終検証日、公開URL、変更根拠へ遷移できるようにする。
 4. 項目数が増えたらYAML/JSONを**単一正本として移行**する。MarkdownとJSONの二重手入力はしない。
+
+
+## 公開Repoの衛生監査（2026-10-17追加）
+
+[GitHub Actions](../.github/workflows/deploy-pages.yml)は公開アプリ13Repoの進捗観測に加え、**両アカウントの公開Repoのみ**を毎週・手動・対象ファイルpush時に監査します。[収集プログラム](../scripts/scan_repo_hygiene.py)は提供元APIの各Repoに対し `private === false` を検証してから、安全な項目だけを出力します。非公開リポジトリは名前・件数・最終push時刻も公開JSONに載せません。
+
+[公開Repo衛生JSON](https://moyashimisosoup.github.io/session-deck/data/repo-hygiene.json)は `same_name`、`not_in_app_ledger`、`minimal_content`、`push_30d_plus / push_60d_plus / push_90d_plus`等を候補理由として示します。**最終push日時はAIのセッション活動とは別**で、停止・完成・廃止・アーカイブ済みと自動推定しません。
+
+[確認処理の正本](REPO_HYGIENE_DECISIONS.json)の各レコードは `repo`、`status`、人が確認した `reviewed_at`、`evidence_url` で構成します。`status`は `review_required`、`canonical`、`intentional_parallel`、`maintenance`、`out_of_scope` のいずれか。確認済みの値は時刻とRepo自身の証拠URLがなければ拒否。再スキャンが完了しても、確認済みを勝手に解除したり、Archive/Deleteすることはありません。
+
+## 非公開イベント保存PoC
+
+[PRIVATE_SESSION_STORE_PLAN.md](PRIVATE_SESSION_STORE_PLAN.md)を参照。2026-10-17、所有者限定のGoogle Driveフォルダ・Google Docを作成、ダミーイベントの書込みと読戻しに成功。非公開Driveの実ファイルID・会話URLは**公開GitHubに載せない**。これはコネクタを用いた試験であり、Session Deckの非公開認証UI・自動同期の完成ではありません。
+

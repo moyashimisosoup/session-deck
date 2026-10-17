@@ -12,6 +12,12 @@ on:
       - 'docs/CLOUD_SESSION_PROTOCOL.md'
       - 'portfolio-ui.css'
       - 'portfolio-ui.js'
+      - 'repo-hygiene-ui.js'
+      - 'scripts/scan_repo_hygiene.py'
+      - 'tests/test_repo_hygiene.py'
+      - 'scripts/validate_private_event.py'
+      - 'tests/test_validate_private_event.py'
+      - 'docs/REPO_HYGIENE_DECISIONS.json'
       - 'portfolio-polish.css'
       - 'portfolio-shortcuts.js'
       - '.github/workflows/check-portfolio.yml'
@@ -37,10 +43,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify public observation and review semantics
         run: python3 -m unittest discover -s tests -p 'test_collect_portfolio.py' -v
+      - name: Validate offline public hygiene rules
+        run: python3 -m unittest discover -s tests -p 'test_repo_hygiene.py' -v
+
+      - name: Validate private-event schema offline only
+        run: python3 -m unittest discover -s tests -p 'test_validate_private_event.py' -v
+
       - name: Validate external UI JavaScript and accessibility hooks
         run: |
           node --check portfolio-ui.js
           node --check portfolio-shortcuts.js
+          node --check repo-hygiene-ui.js
           python3 - <<'PY'
           from pathlib import Path
           html=Path('portfolio.html').read_text(encoding='utf-8')
@@ -65,6 +78,11 @@ jobs:
               raise SystemExit('Navigation API for command menu missing')
           if 'openPalette' not in shortcuts or 'moveSelection' not in shortcuts or 'isTyping' not in shortcuts:
               raise SystemExit('Command palette or keyboard checks missing')
+          if 'repo-hygiene-ui.js' not in html or 'id="repoHygiene"' not in html:
+              raise SystemExit('Missing public hygiene view hooks')
+          script_hygiene=Path('repo-hygiene-ui.js').read_text(encoding='utf-8')
+          if 'repo-hygiene.json' not in script_hygiene or 'textContent' not in script_hygiene:
+              raise SystemExit('Hygiene UI must use public snapshot and safe DOM insertion')
           if ':root[data-theme="dark"]' not in polish or 'prefers-reduced-motion' not in polish:
               raise SystemExit('Dark theme or motion reduction missing')
           for hook in ['id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md']:

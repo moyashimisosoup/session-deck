@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./portfolio-polish.css">
   <script defer src="./portfolio-ui.js"></script>
   <script defer src="./portfolio-shortcuts.js"></script>
+  <script defer src="./repo-hygiene-ui.js"></script>
 </head>
 <body>
   <div class="shell">
@@ -84,6 +85,21 @@
           <div id="list" class="app-list" aria-live="off"></div>
           <div id="empty" class="empty" hidden><strong>該当するアプリがありません</strong><p>検索語や絞り込みを変更してください。</p></div>
           <div id="loadError" class="error" role="alert" hidden>台帳を読み込めませんでした。<a href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/APP_PORTFOLIO.md">GitHubの正本を開く ↗</a></div>
+        </section>
+        <section id="repoHygiene" class="list-panel hygiene-panel" aria-label="GitHubの整理候補">
+          <div class="panel-header">
+            <div class="panel-title">
+              <h2>リポジトリの整理候補</h2>
+              <span id="hygieneCount">収集中…</span>
+            </div>
+            <button id="toggleHygieneAll" class="clear-button" type="button" aria-pressed="false">全Repoを表示</button>
+          </div>
+          <div class="hygiene-description" id="hygieneStatus" role="status">公開GitHubの定期監査データを読み込み中です。重複や長期未更新は確認候補であり、アーカイブ判定ではありません。</div>
+          <div id="hygieneRows" class="hygiene-rows"></div>
+          <div class="hygiene-footer">
+            <a href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/REPO_HYGIENE_20261017.md" target="_blank" rel="noopener noreferrer">初回監査レポート ↗</a>
+            <a href="https://github.com/moyashimisosoup/session-deck/blob/main/docs/REPO_HYGIENE_DECISIONS.json" target="_blank" rel="noopener noreferrer">確認結果の正本 ↗</a>
+          </div>
         </section>
         <footer class="page-footer">
           <span>GitHubの公開データを読み取り専用で表示しています。推測で完了や稼働中とは判定しません。</span>
