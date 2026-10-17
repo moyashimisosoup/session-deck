@@ -41,10 +41,11 @@ def mock_api(path):
 
 
 class CollectorTests(unittest.TestCase):
-    def test_current_ledger_has_13_valid_repo_rows(self):
+    def test_current_ledger_has_registered_repo_rows(self):
         markdown = (ROOT / "docs" / "APP_PORTFOLIO.md").read_text(encoding="utf-8")
         apps = collector.parse_ledger(markdown)
-        self.assertEqual(13, len(apps))
+        self.assertGreaterEqual(len(apps), 14)
+        self.assertIn("APP-022", [x["app_id"] for x in apps])
         self.assertEqual("APP-001", apps[0]["app_id"])
         self.assertNotIn("APP-014", [x["app_id"] for x in apps])
 
@@ -155,10 +156,10 @@ class CollectorTests(unittest.TestCase):
             file.write_text(json.dumps(doc), encoding="utf-8")
             self.assertEqual("reviewed", collector.load_review_checkpoints(file, collector.parse_ledger(LEDGER))["APP-001"]["anchor_kind"])
 
-    def test_full_checkpoint_manifest_aligns_to_all_13_apps(self):
+    def test_full_checkpoint_manifest_aligns_to_all_registered_apps(self):
         apps = collector.parse_ledger((ROOT / "docs" / "APP_PORTFOLIO.md").read_text(encoding="utf-8"))
         checkpoints = collector.load_review_checkpoints(ROOT / "docs" / "PORTFOLIO_REVIEW_CHECKPOINTS.json", apps)
-        self.assertEqual(13, len(checkpoints))
+        self.assertEqual(len(apps), len(checkpoints))
         self.assertEqual(set(app["app_id"] for app in apps), set(checkpoints))
 
 
