@@ -25,6 +25,13 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
 - 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
 
+## 非公開セッションの復元・再開PoC（2026-10-17）
+
+- 非公開Driveで**架空のSTART→CHECKPOINT→HANDOFFを各1件**、リビジョン条件付きで保存・読戻し。古いrevisionの書込み拒否と無変更も確認しました。実チャットの自動収集ではありません。
+- [private_journal.py](scripts/private_journal.py)は`event_id`の冪等性確認、同IDの内容衝突の拒否、破損JSONの拒否、`work_id`ごとの最新CHECKPOINT／HANDOFF・次の一手を**オフライン**で再構成します。[回帰テスト](tests/test_private_journal.py)は架空データ専用です。
+- [アプリ台帳](portfolio.html)のアプリ詳細に「このアプリの引継ぎを復元」、下部に「再開・復元をコピー」を追加。認証済みのGoogle Drive接続を使って**読み取り専用で**照合するプロンプトを渡します。公開HTMLからDriveへ直接アクセスしません。
+- 所有者限定のGoogle Docs内に、架空Workの再開状態だけを示す**手動更新の試験ビュー**も作成済みです。自動同期・認証付き独立Web UIは未実装。[PoC運用と限界](docs/PRIVATE_SESSION_STORE_PLAN.md)参照。
+
 ## 自動Repo衛生監査と非公開セッション保存PoC（2026-10-17）
 
 - [アプリ台帳](portfolio.html)の「リポジトリの整理候補」に、2アカウントの**公開Repo限定**の週次チェックを追加しました。名前の一致、アプリ台帳未登録、最終pushの経過（30/60/90日）、空に近い初期状態を検知します。公開可能なメタデータだけを[生成JSON](https://moyashimisosoup.github.io/session-deck/data/repo-hygiene.json)に配信します。

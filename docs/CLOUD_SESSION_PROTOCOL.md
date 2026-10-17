@@ -73,32 +73,35 @@ TradingSystemで確認できた \`AGENTS.md\` と \`docs/runbooks/SESSION_LIFECY
 
 ## 5. セッションイベントの最小形式（非公開保存のみ）
 
-以下はダミーのスキーマ例。**実URL、実セッションID、ユーザー名を公開GitHub/Pagesに書かない**。
+現行の [validate_private_event.py](../scripts/validate_private_event.py) が実際に受け入れるスキーマを正本とする。ここでは**架空データ**を示す。旧設計案の `name` / `source` / `progress` / `evidence` / `sync_status` は**現在のイベントv1スキーマにはない**ため、実データとして混ぜない。
 
-\`\`\`json
+```json
 {
   "schema_version": 1,
-  "app_id": "APP-001",
-  "work_id": "APP-001-W003",
-  "session_id": "sample-session-001",
-  "platform": "chatgpt",
+  "event_id": "DEMO_CHECKPOINT_001",
   "event_type": "CHECKPOINT",
-  "event_at": "2026-10-17T00:38:00Z",
-  "source": "manual_confirmed",
-  "name": "〖台帳整理〗1017・03・重複監査と引継ぎ",
-  "progress": "重複候補のRepo名を照合",
-  "evidence": ["https://github.com/example/public-repo/commit/0123456789abcdef0123456789abcdef01234567"],
-  "unverified": ["次の作業セッションの開始日時"],
-  "next_action": "READMEの差分とCIを確認",
-  "sync_status": "not_synced"
+  "app_id": "APP-001",
+  "work_id": "APP-001-W0003",
+  "session_id": "example-only-not-a-real-chat",
+  "platform": "chatgpt",
+  "event_at": null,
+  "recorded_at": "2026-10-17T00:54:52Z",
+  "time_verification": "not_observed",
+  "native_id_verified": false,
+  "privacy_classification": "private_session_metadata",
+  "summary": "架空のCHECKPOINT。実ユーザーの作業履歴ではない。",
+  "next_action": "現在のGitHub HEADとCIを確認する",
+  "evidence_urls": []
 }
-\`\`\`
+```
 
-- \`event_at\`は記録元によって観測されたUTCオフセット付き日時。表示時にJST変換。
-- \`started_at\`、\`ended_at\`は適切なイベントが確認できた場合のみ更新。\`last_event_at\`は**保存が成功した日時**であり、下書き時刻とは分ける。
-- 同一\`event_id\`で再実行しても二重登録しない。旧イベントを消さず、訂正は新イベントで理由を記録。
-- レコードはまず各作業Repoの**非公開管理先**または認証付き非公開GitHub保管先で保持。公開台帳は**APP-IDと公表できる開発状況だけ**を持つ。
-- 保存先が未確定・書込権限がない場合は「保存済み」と報告せず、チャットに**未保存の引継ぎメモ**を返す。
+- `event_at` は確認できた元イベント日時のみ。確認できない場合は`null`にして`time_verification=not_observed`を明記。ChatGPT通常チャットの開始日時を推測しない。
+- `recorded_at` はイベントメタデータの作成・記録準備時刻。**実際にDriveへ保存できた時刻とは別**。永続化成功は条件付き書込みとDoc読戻しで確かめる。
+- `started_at`は確認できたSTART、`ended_at`は確認できたENDの`event_at`からだけ導出する。CHECKPOINTや無応答から開始・終了を補完しない。
+- イベントは変更・削除せず追記する。同一`event_id`＋同一内容は何もしない、異なる内容のID重複は衝突として拒否する。
+- [private_journal.py](../scripts/private_journal.py)は認証済みDocの本文を渡されたときだけ復元し、`work_id`単位でHANDOFF／最新の一手を表示用に派生する。**GitHub Pagesには記録本文を配信しない**。
+- 既存のGoogle Drive owner-only疎通試験、古いrevisionによる書込み拒否、架空3イベントの保存・復元は[非公開保存PoC](PRIVATE_SESSION_STORE_PLAN.md)参照。
+- 保存先・書込権限がない場合は「保存済み」と言わず、**未保存の引継ぎメモ**を返す。非公開のDoc実IDを公開RepoやActionsへ記録しない。
 
 ## 6. データ公開境界と段階的導入
 

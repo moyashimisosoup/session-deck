@@ -17,6 +17,8 @@ on:
       - scripts/collect_portfolio.py
       - scripts/scan_repo_hygiene.py
       - scripts/validate_private_event.py
+      - scripts/private_journal.py
+      - tests/test_private_journal.py
       - tests/test_validate_private_event.py
       - tests/test_repo_hygiene.py
       - docs/REPO_HYGIENE_DECISIONS.json
@@ -99,6 +101,16 @@ jobs:
 
       - name: Run offline private event schema tests
         run: python3 -m unittest discover -s tests -p 'test_validate_private_event.py' -v
+
+      - name: Validate private journal replay offline
+        run: python3 -m unittest discover -s tests -p 'test_private_journal.py' -v
+
+      - name: Assert private journal code is never staged for public Pages
+        run: |
+          test ! -e _site/scripts/private_journal.py
+          test ! -e _site/docs/PRIVATE_SESSION_STORE_PLAN.md
+          test ! -e _site/private-session-events.json
+          test ! -e _site/owner-vault
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
