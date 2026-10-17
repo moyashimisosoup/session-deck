@@ -90,7 +90,7 @@ jobs:
               raise SystemExit('Hygiene UI must use public snapshot and safe DOM insertion')
           if ':root[data-theme="dark"]' not in polish or 'prefers-reduced-motion' not in polish:
               raise SystemExit('Dark theme or motion reduction missing')
-          for hook in ['id="copyProgressBar"','id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionResume"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md']:
+          for hook in ['id="copyProgressBar"','id="copySessionStart"','id="copySessionCheckpoint"','id="copySessionResume"','id="copySessionEnd"','REPO_HYGIENE_20261017.md','CLOUD_SESSION_PROTOCOL.md','CHATGPT_EARLY_ROTATION_POLICY.md']:
               if hook not in html:
                   raise SystemExit('Missing session audit tool hook: '+hook)
           for label in ['copyProgressBar','copySessionStart','copySessionCheckpoint','copySessionResume','copySessionEnd','attachCopy(','このアプリの引継ぎを復元']:
@@ -98,6 +98,11 @@ jobs:
                   raise SystemExit('Missing session template wiring: '+label)
           protocol=Path('docs/CLOUD_SESSION_PROTOCOL.md').read_text(encoding='utf-8')
           audit=Path('docs/REPO_HYGIENE_20261017.md').read_text(encoding='utf-8')
+          rotation=Path('docs/CHATGPT_EARLY_ROTATION_POLICY.md').read_text(encoding='utf-8')
+          if 'HANDOFF_READY' not in rotation or '2〜3件' not in rotation or '未保存' not in rotation:
+              raise SystemExit('Early rotation policy missing core safety clauses')
+          if '2〜3件' not in script or 'CHATGPT_EARLY_ROTATION_POLICY.md' not in script:
+              raise SystemExit('Copied chat instructions missing early handoff triggers')
           if 'started_at' not in protocol or 'ended_at' not in protocol or 'work_id' not in protocol:
               raise SystemExit('Lifecycle timestamp/ID contract missing')
           if '非公開Repoの名前' not in audit and '非公開のRepo名' not in audit:
