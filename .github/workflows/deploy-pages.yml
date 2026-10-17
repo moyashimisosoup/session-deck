@@ -15,6 +15,10 @@ on:
       - portfolio-polish.css
       - portfolio-shortcuts.js
       - scripts/collect_portfolio.py
+      - scripts/scan_repo_hygiene.py
+      - tests/test_repo_hygiene.py
+      - docs/REPO_HYGIENE_DECISIONS.json
+      - repo-hygiene-ui.js
       - tests/test_collect_portfolio.py
       - docs/APP_PORTFOLIO.md
       - docs/PORTFOLIO_REVIEW_CHECKPOINTS.json
@@ -49,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          cp index.html styles.css app.js motion.css motion.js portfolio.html portfolio-ui.css portfolio-ui.js portfolio-polish.css portfolio-shortcuts.js _site/
+          cp index.html styles.css app.js motion.css motion.js portfolio.html portfolio-ui.css portfolio-ui.js portfolio-polish.css portfolio-shortcuts.js repo-hygiene-ui.js _site/
           mkdir -p _site/docs
           cp docs/APP_PORTFOLIO.md _site/docs/
           test -s _site/index.html
@@ -62,6 +66,7 @@ jobs:
           test -s _site/portfolio-ui.js
           test -s _site/portfolio-polish.css
           test -s _site/portfolio-shortcuts.js
+          test -s _site/repo-hygiene-ui.js
           test -s _site/docs/APP_PORTFOLIO.md
           touch _site/.nojekyll
 
@@ -76,6 +81,19 @@ jobs:
             --ledger docs/APP_PORTFOLIO.md \
             --output _site/data/portfolio-observations.json
           test -s _site/data/portfolio-observations.json
+
+      - name: Validate public hygiene scan offline
+        run: python3 -m unittest discover -s tests -p 'test_repo_hygiene.py' -v
+
+      - name: Scan only explicitly public owned repositories
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/scan_repo_hygiene.py \
+            --ledger docs/APP_PORTFOLIO.md \
+            --decisions docs/REPO_HYGIENE_DECISIONS.json \
+            --output _site/data/repo-hygiene.json
+          test -s _site/data/repo-hygiene.json
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
