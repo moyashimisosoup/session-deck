@@ -25,6 +25,13 @@ GitHub Pagesの公開方式は `Settings → Pages → Build and deployment → 
 - [アプリ台帳UI](portfolio.html)の下部に「セッション記録テンプレート」を追加。**開始／チェックポイント／終了・引継ぎ**をコピーしてChatGPT・Codex・Claude Codeの非ローカルセッションで使えます。これはテンプレートのコピーのみで、実チャットを自動監視・記録・改名する機能ではありません。
 - 現在の公開GitHub Pagesは匿名閲覧できるため、**実際のセッションID、会話URL、非公開Repoの名前・進捗や引継ぎの本文を配信しません**。セッションイベントの同期には別の認証付き非公開保管先が必要です。
 
+## 新アプリ受付を自動化する App Factory（初期実装）
+
+- [採用→非公開Repo作成の設計と導入手順](docs/APP_FACTORY_LAUNCH_PLAN.md)／[移植用のテスト済みコード](bootstrap/app-factory/README.md)。
+- 「新アプリ案」で**構想整理のみ**、「採用」で承認依頼、「作成を承認」でprivate Repo生成を試みる。公開GitHubに個別アイデアの申請本文は置かない。
+- 現在この公開Repoに保存されているのは**起動しないブートストラップ**。ユーザーが専用の非公開受付Repoを一度作成し、そこへ設置・Action Secretを設定するまで自動作成機能は稼働しない。
+- リポジトリ生成、初期ファイル配置、台帳のAPP-ID登録、Pages配信をそれぞれ別々に検証する。未実施を「作成済み」と報告しない。
+
 ## ChatGPTの早期引継ぎとプロジェクト設定（2026-10-17）
 
 - [早期引継ぎ運用規則](docs/CHATGPT_EARLY_ROTATION_POLICY.md)：通常ChatGPTのコンテキスト残量を推測せず、意味のある進捗・記録の鮮度・作業の複雑さでCHECKPOINT/HANDOFF_READYを判断します。

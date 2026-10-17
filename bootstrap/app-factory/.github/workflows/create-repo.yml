@@ -1,0 +1,49 @@
+name: App Factory private repository creation
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: app-factory-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  create:
+    # Only a label applied by the authorized owner, to an Issue opened by that owner.
+    # Installed ONLY in a private moyashimisosoup/app-factory repo.
+    if: >-
+      github.repository == 'moyashimisosoup/app-factory' &&
+      github.event.label.name == 'factory-approved' &&
+      github.actor == 'moyashimisosoup' &&
+      github.event.issue.user.login == 'moyashimisosoup'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate adopted issue and create PRIVATE repository
+        id: factory
+        env:
+          APP_FACTORY_ISSUE_BODY: ${{ github.event.issue.body }}
+          APP_FACTORY_REPO_CREATOR: ${{ secrets.APP_FACTORY_REPO_CREATOR }}
+        run: python3 scripts/create_repo.py --issue "${{ github.event.issue.number }}" --execute
+
+      - name: Record confirmed result on private issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_URL: ${{ steps.factory.outputs.repo_url }}
+          RESULT_STATUS: ${{ steps.factory.outputs.status }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [ "$RESULT_STATUS" = "created" ]; then
+            note="Created a PRIVATE repository: $RESULT_URL"
+          else
+            note="Already created by this same request (safe retry): $RESULT_URL"
+          fi
+          note="$note"$'\n\n'"NEXT: initialize README / AGENTS.md / CLAUDE.md / index.html through the GitHub connector, verify readback, and register in Session Deck APP_PORTFOLIO.md. Not yet registered or published."
+          gh issue comment "$ISSUE_NUMBER" --body "$note"
