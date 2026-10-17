@@ -80,6 +80,12 @@
       "repo": "yama-books/basho-atlas",
       "anchor_sha": "755e07ed6e684b3af12b5c8288e7f11fe0ec6ba7",
       "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-022",
+      "repo": "moyashimisosoup/katsuramuki-dojo",
+      "anchor_sha": "0f17ea48b33bfc6434dd9b0be7986d2589f597cc",
+      "anchor_kind": "bootstrap"
     }
   ]
 }

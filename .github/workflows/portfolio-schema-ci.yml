@@ -1,0 +1,20 @@
+name: Portfolio ledger consistency
+on:
+  pull_request:
+    paths:
+      - 'docs/APP_PORTFOLIO.md'
+      - 'docs/PORTFOLIO_REVIEW_CHECKPOINTS.json'
+      - 'tests/test_collect_portfolio.py'
+      - 'scripts/collect_portfolio.py'
+      - '.github/workflows/portfolio-schema-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ledger-check:
+    name: Validate public ledger and checkpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -p 'test_collect_portfolio.py' -v
