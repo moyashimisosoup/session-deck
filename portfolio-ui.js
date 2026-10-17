@@ -359,7 +359,7 @@
       '実チャットのログや非公開セッションID・リンクを公開Pagesや公開GitHubへ保存しない。',
       'GitHubの最終pushとチャットの最終活動を混同しない。',
       '共通の表示規則: https://github.com/moyashimisosoup/session-deck/blob/main/docs/CHAT_PROGRESS_BAR.md'
-    ].join('\\n');
+    ].join('\n');
     attachCopy($('copyProgressBar'),progressRule,'進捗表示ルールをコピーしました ✓');
     attachCopy($('copySessionStart'),startTemplate,'開始テンプレをコピーしました ✓');
     const resumeTemplate=[
