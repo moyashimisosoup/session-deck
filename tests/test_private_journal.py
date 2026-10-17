@@ -96,6 +96,22 @@ class PrivateJournalTest(unittest.TestCase):
         self.assertEqual(2,snap["session_count"])
         self.assertIsNone(snap["sessions"][0]["ended_at"])
 
+    def test_end_then_more_events_rejected(self):
+        start=event("PILOT_START_001","START")
+        end=event("PILOT_END_001","END")
+        later=event("PILOT_MILESTONE_001","MILESTONE")
+        self.assertRaises(ValueError,summarize_work,[start,end,later])
+
+    def test_duplicate_session_start_rejected(self):
+        start=event("PILOT_START_001","START")
+        again=event("PILOT_START_002","START")
+        self.assertRaises(ValueError,summarize_work,[start,again])
+
+    def test_old_verified_start_is_not_lost_on_unverified_handoff(self):
+        start=event("PILOT_START_001","START",event_at="2026-10-17T01:00:00Z",time_verification="manually_confirmed")
+        handoff=event("PILOT_HANDOFF_001","HANDOFF")
+        self.assertTrue(summarize_work([start,handoff])[0]["has_verified_event_time"])
+
     def test_readback_missing_event_not_success(self):
         self.assertFalse(verify_saved(lines_for(),event()))
 
