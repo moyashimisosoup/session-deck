@@ -137,3 +137,17 @@
 | PV-05 | NOT VERIFIED | 複数AIの同時追記、更新衝突の検知・復旧、Google Drive権限取消、バックアップ／復元、iPhone Safariの非公開UI操作 |
 
 **証跡の区別**：ダミーのprivate store保存成功と、ChatGPT/Codex/Claude Codeの実セッション連携成功は別。Repoの最終pushから開発停止を推測しない。検出された候補は人の判断が必要。
+
+
+## 非公開イベント再生と引継ぎ復元 PoC（2026-10-17）
+
+| ID | 判定 | 検証内容 |
+| --- | --- | --- |
+| PJ-01 | PASS | Google Driveの所有者限定試験Docへ、完全な架空`APP-001-W9999`のSTART、CHECKPOINT、HANDOFFを順に書込み。それぞれrevision指定の更新と再読戻しで保存を確認 |
+| PJ-02 | PASS | **古いrequiredRevisionId**での追記は拒否。試験Docのrevisionと本文は変化せず、拒否対象のマーカーは挿入されなかった |
+| PJ-03 | PASS | 所有者限定の別Google Docへ、3イベントから作った`Work Resume View | Pilot`（HANDOFF、次の一手、開始／終了未確認）を記録。所有者1名、shared=false、指定フォルダ配下、本文読戻しを確認 |
+| PJ-04 | CI検証対象 | [private_journal.py](../scripts/private_journal.py)とテストに、イベントIDの重複／衝突、START・ENDの誤推測防止、複数セッションの区別、JSON破損時の拒否、Doc境界制限を追加 |
+| PJ-05 | ソース実装、実操作未確認 | 公開アプリ台帳に再開指示のコピーを追加（APP-ID付きと汎用）。ブラウザのコピー／別チャットでの接続検索・表示は未検証 |
+| PJ-06 | 未実装 | 本物のユーザーセッションの自動START・END時刻取得、秘密データの自動Sync、認証付きの独立Web画面、バックアップ・複数AIの同時書込み |
+ 
+**漏洩禁止**：試験用Google Driveの実ファイルID・フォルダID・本文は公開Repo・Pages・PRコメントに保存しない。GitHub CIにはダミーのコード上のフィクスチャだけを渡す。
