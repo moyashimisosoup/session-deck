@@ -49,19 +49,24 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
   assert.equal(element('openChat').disabled,false);
 });
 
-function simulateChatGPT(){
+function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false}={}){
   const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
-  let title='旧チャット',menuOpen=false,editing=false,saved=null,listener;
+  let title='旧チャット',menuOpen=false,editing=false,listener;
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>({querySelector:()=>menuButton})};
   const menuButton={click(){menuOpen=true}};
-  const renameItem={textContent:'名前を変更',getClientRects:()=>[{}],click(){editing=true}};
-  const input={value:'',focus(){},parentElement:null,
-    closest:s=>s==='form'?{requestSubmit(){title=input.value;anchor.innerText=title;}}:null};
+  const renameItem={textContent:menuLabel,innerText:menuLabel,getAttribute:()=>null,getClientRects:()=>[{}],click(){editing=true}};
+  const menuItems=ambiguous?[renameItem,{...renameItem}]:noRename?[]:[renameItem];
+  const input={value:'',focus(){},matches:s=>s.includes('input[aria-label="Chat title"]'),
+    parentElement:{parentElement:{querySelectorAll:()=>[]}},
+    closest:s=>s==='form'?(inline?null:{requestSubmit(){title=input.value;anchor.innerText=title;}}):null,
+    dispatchEvent(event){
+      if(inline&&event.type==='keydown'&&event.key==='Enter'){title=this.value;anchor.innerText=title;}
+    }};
   const document={
     querySelectorAll:s=>{
       if(s==='a[href*="/c/"]')return [anchor];
-      if(s==='[role="menuitem"]')return menuOpen?[renameItem]:[];
+      if(s.startsWith('[role="menuitem"],'))return menuOpen?menuItems:[];
       if(s.startsWith('input[name="title-editor"]'))return editing?[input]:[];
       if(s==='[role="dialog"]')return [];
       return [];
@@ -75,7 +80,6 @@ function simulateChatGPT(){
   const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},HTMLInputElement:class {},
     InputEvent:class{constructor(type,props){this.type=type;this.props=props}},
     Event:class{constructor(type){this.type=type}},setTimeout,clearTimeout,console};
-  input.dispatchEvent=()=>{};
   runInNewContext(content,vm);
   const send=message=>new Promise(resolve=>listener(message,null,resolve));
   return {send,id,getTitle:()=>title};
@@ -97,5 +101,36 @@ test('ChatGPT extension refuses invalid title rather than guessing',async()=>{
   const sim=simulateChatGPT();
   const r=await sim.send({type:'RENAME',expectedId:sim.id,title:'no date or work ID'});
   assert.equal(r.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT menu accepts Japanese alternate text and inline Enter commit',async()=>{
+  const sim=simulateChatGPT({menuLabel:'✎ 名前を変更 ⌘R',inline:true});
+  const title='【命名テスト】1019・TEST-001・拡張機能の改名確認';
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title});
+  assert.equal(result.ok,true);
+  assert.equal(result.status,'ui_verified');
+  assert.equal(sim.getTitle(),title);
+});
+
+test('ChatGPT menu supports English rename labels',async()=>{
+  const sim=simulateChatGPT({menuLabel:'Rename conversation'});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【Test】1019・TEST-001・Rename flow'});
+  assert.equal(result.ok,true);
+});
+
+test('ChatGPT extension refuses ambiguous menu rather than clicking',async()=>{
+  const sim=simulateChatGPT({ambiguous:true});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【命名テスト】1019・TEST-001・候補が重複'});
+  assert.equal(result.ok,false);
+  assert.match(result.error,/改名メニューが特定できません/);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT extension reports missing menu without reading conversation body',async()=>{
+  const sim=simulateChatGPT({noRename:true});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【命名テスト】1019・TEST-001・メニューが不明'});
+  assert.equal(result.ok,false);
+  assert.match(result.error,/可視項目 0 件/);
   assert.equal(sim.getTitle(),'旧チャット');
 });
