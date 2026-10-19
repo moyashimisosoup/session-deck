@@ -79,7 +79,8 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
   const loc={href:'https://chatgpt.com/c/'+id};
   const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},HTMLInputElement:class {},
     InputEvent:class{constructor(type,props){this.type=type;this.props=props}},
-    Event:class{constructor(type){this.type=type}},setTimeout,clearTimeout,console};
+    Event:class{constructor(type){this.type=type}},
+    KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console};
   runInNewContext(content,vm);
   const send=message=>new Promise(resolve=>listener(message,null,resolve));
   return {send,id,getTitle:()=>title};
