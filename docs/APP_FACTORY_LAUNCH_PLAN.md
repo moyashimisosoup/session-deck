@@ -1,6 +1,6 @@
 # App Factory 運用・稼働計画（公開受付版）
 
-最終更新：2026-10-18 JST。担当：APP-001 / Session Deck管理基盤。
+最終更新：2026-10-20 JST。担当：APP-001 / Session Deck管理基盤。
 
 ## 正本と現在の状態
 
@@ -9,6 +9,7 @@
 - **構文修正：** [PR #2](https://github.com/moyashimisosoup/app-factory/pull/2)（GitHub Actions YAMLエラー修正と回帰対策）
 - **Public作成:** [PR #6](https://github.com/moyashimisosoup/app-factory/pull/6)で明示オプトインのschema v3を追加。Privateのschema v2をPublicへ自動変更しない。
 - **運用保護・初期化:** [PR #9](https://github.com/moyashimisosoup/app-factory/pull/9)でRuleset設定手順、障害対応、トークン更新、Webスターター、台帳登録手順を追加。[main CI](https://github.com/moyashimisosoup/app-factory/actions/runs/39088721245)・[事前検査](https://github.com/moyashimisosoup/app-factory/actions/runs/39088721332)は成功。
+- **2026-10-20 main保護有効化:** [Ruleset #25393436](https://github.com/moyashimisosoup/app-factory/rules/25393436)をユーザーが設定し、GitHub APIで`active`、対象`~DEFAULT_BRANCH`（main）、PR必須・承認0人、GitHub Actionsの`verify`成功必須（strict）、強制push禁止・削除禁止、bypass空を読戻し確認。
 - **検証済み：** [最新main CI](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930675) および [事前検査・承認ラベル準備](https://github.com/moyashimisosoup/app-factory/actions/runs/39022930717) が成功。
 - **初回の実生成成功（2026-10-17）：** ユーザーがGitHub Actions Secret `APP_FACTORY_REPO_CREATOR`を登録後、[公開Issue #4](https://github.com/moyashimisosoup/app-factory/issues/4)に本人承認ラベルを付与。[Actions #39026244548](https://github.com/moyashimisosoup/app-factory/actions/runs/39026244548)がsuccess、本人GitHub接続で新Repoの実在・Private設定・main/READMEを確認した。公開IssueへPrivate Repo URLは出さない。Secret値・有効期限は取得していない。
 - この文書よりも**稼働リポジトリの[README](https://github.com/moyashimisosoup/app-factory/blob/main/README.md)**を優先する。Session Deckの[旧Privateブートストラップ](../bootstrap/app-factory/README.md)は履歴資料であり、現在の公開Factoryへ再導入しない。
@@ -48,9 +49,10 @@ GitHubの公式仕様：[repository_creation権限追加](https://github.blog/ch
 ## 2026-10-18の運用保護チェックポイント
 
 - 適用済み: App Factoryの[PR #9](https://github.com/moyashimisosoup/app-factory/pull/9)で初期化テンプレートと[復旧手順](https://github.com/moyashimisosoup/app-factory/blob/main/docs/INCIDENT_RUNBOOK.md)をmainへ保存し、CIを確認。
-- 未適用: [main Ruleset推奨設定](https://github.com/moyashimisosoup/app-factory/blob/main/docs/BRANCH_PROTECTION.md)。2026-10-18のGETではRulesetなし。GitHub接続に新規Ruleset設定操作がないため、所有者によるSettingsでの設定・読戻しが残る。
+- **2026-10-20適用済み:** [main Ruleset](https://github.com/moyashimisosoup/app-factory/rules/25393436)の設定とAPI読戻しを確認。PR必須・CI `verify`（strict）・強制push禁止・削除禁止。2026-10-18時点で未設定だった問題は解決した。
 - 未自動化: 別Repoへの初期ファイル書込み、Session DeckのAPP-ID台帳登録、Web公開は独立作業。作成専用PATにこれらの書込み権限を追加しない。
-- **次の1操作**: app-factoryのmain用Rulesetを設定し、有効化・CI必須・force-push禁止を読戻し確認。
+- **保護下のPR動作確認済み:** [App Factory PR #11](https://github.com/moyashimisosoup/app-factory/pull/11)を作成し、GitHub Actions `verify`成功後にsquash merge成功（commit `906e80a3b4f45c35636c2fca16f48b215f78113c`）。保護を緩めず通常の開発フローで統合できた。
+- **次の1操作**: 正式採用した実アプリでスターター配置とAPP-ID台帳登録をそれぞれ読戻す。
 
 ## 過去の設計と整合
 
