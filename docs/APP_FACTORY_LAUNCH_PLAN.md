@@ -51,7 +51,8 @@ GitHubの公式仕様：[repository_creation権限追加](https://github.blog/ch
 - 適用済み: App Factoryの[PR #9](https://github.com/moyashimisosoup/app-factory/pull/9)で初期化テンプレートと[復旧手順](https://github.com/moyashimisosoup/app-factory/blob/main/docs/INCIDENT_RUNBOOK.md)をmainへ保存し、CIを確認。
 - **2026-10-20適用済み:** [main Ruleset](https://github.com/moyashimisosoup/app-factory/rules/25393436)の設定とAPI読戻しを確認。PR必須・CI `verify`（strict）・強制push禁止・削除禁止。2026-10-18時点で未設定だった問題は解決した。
 - 未自動化: 別Repoへの初期ファイル書込み、Session DeckのAPP-ID台帳登録、Web公開は独立作業。作成専用PATにこれらの書込み権限を追加しない。
-- **次の1操作**: 以降の小さなドキュメントPRでRulesetの実際のマージ動作を検証し、正式採用した実アプリでスターター配置・台帳への登録をそれぞれ読戻す。
+- **保護下のPR動作確認済み:** [App Factory PR #11](https://github.com/moyashimisosoup/app-factory/pull/11)を作成し、GitHub Actions `verify`成功後にsquash merge成功（commit `906e80a3b4f45c35636c2fca16f48b215f78113c`）。保護を緩めず通常の開発フローで統合できた。
+- **次の1操作**: 正式採用した実アプリでスターター配置とAPP-ID台帳登録をそれぞれ読戻す。
 
 ## 過去の設計と整合
 
