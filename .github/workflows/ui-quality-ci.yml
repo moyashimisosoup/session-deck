@@ -9,6 +9,7 @@ on:
       - index.html
       - styles.css
       - 'tests/ui-*.test.mjs'
+      - tests/ui-browser-smoke.mjs
       - tests/github-public-probe.test.mjs
       - scripts/github-public-probe.mjs
       - .github/workflows/ui-quality-ci.yml
@@ -36,3 +37,24 @@ jobs:
       - name: Verify public/private asset boundary
         run: |
           ! grep -Eqi '(drive.google.com|docs.google.com|APP-001-W[0-9]{3,5})' app.js motion.js motion.css index.html
+
+  viewport-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install small browser automation driver (no bundled browser)
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright-core@1.56.1
+      - name: Inspect host browser
+        shell: bash
+        run: |
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+      - name: Check 100% viewport clipping, dialogs, and search in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          CHROME_BIN="$CHROME_BIN" node tests/ui-browser-smoke.mjs
