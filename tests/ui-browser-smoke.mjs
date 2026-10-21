@@ -62,7 +62,8 @@ try{
       assert.equal(await nested.evaluate(el=>document.activeElement===el),true,'modal focus did not return');
       await page.keyboard.press('Escape');
 
-      await page.locator('[data-view="works"]').click();
+      if(viewport.width<950)await page.locator('#menuToggle').click();
+      await page.locator('.nav-item[data-view="works"]').click();
       const search=page.locator('#searchInput');
       await search.fill('セッション');
       assert.equal(await search.inputValue(),'セッション');
