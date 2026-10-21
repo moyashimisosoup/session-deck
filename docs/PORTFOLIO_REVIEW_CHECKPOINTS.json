@@ -93,6 +93,12 @@
       "anchor_sha": "4ecb87260c5907da9f84542c0ee8bac25177a543",
       "anchor_kind": "bootstrap",
       "observed_at": "2026-10-20T20:31:00+09:00"
+    },
+    {
+      "app_id": "APP-024",
+      "repo": "moyashimisosoup/remote-keyboard",
+      "anchor_sha": "a1ad1b325bf72b5867017e1d1bb65da8080b1d79",
+      "anchor_kind": "bootstrap"
     }
   ]
 }
