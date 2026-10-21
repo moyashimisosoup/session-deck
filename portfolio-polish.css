@@ -208,3 +208,24 @@ h1{font-size:clamp(23px,2.8vw,31px);font-weight:750;letter-spacing:-.75px}
 @media(max-width:880px){.hygiene-row{grid-template-columns:minmax(170px,1fr) minmax(150px,1fr)}.hygiene-flags{grid-column:1/-1}}
 @media(max-width:600px){.hygiene-row{grid-template-columns:1fr;padding:12px 14px;gap:7px}.hygiene-flags{grid-column:auto}
   .hygiene-description,.hygiene-footer{padding-left:14px;padding-right:14px}}
+
+/* Public portfolio sidebar viewport: reserve a visible lower information panel.
+   Small-screen layout remains the existing horizontal navigation. */
+@media(min-width:851px){
+  .sidebar{
+    min-height:0;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+  .sidebar>.brand{flex:0 0 auto}
+  .side-nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior-y:contain;
+    scrollbar-width:thin;
+    scrollbar-color:#53576c transparent;
+  }
+  .side-foot{flex:0 0 auto;margin-top:0}
+}
