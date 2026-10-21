@@ -1,0 +1,38 @@
+name: Validate Session Deck UI interactions
+
+on:
+  pull_request:
+    paths:
+      - app.js
+      - motion.js
+      - motion.css
+      - index.html
+      - styles.css
+      - 'tests/ui-*.test.mjs'
+      - tests/github-public-probe.test.mjs
+      - scripts/github-public-probe.mjs
+      - .github/workflows/ui-quality-ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-behavior:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check existing app and motion
+        run: |
+          node --check app.js
+          node --check motion.js
+          node --check scripts/github-public-probe.mjs
+      - name: Offline interaction and public probe tests
+        run: node --test tests/ui-dialog-focus.test.mjs tests/ui-motion.test.mjs tests/github-public-probe.test.mjs
+      - name: Verify public/private asset boundary
+        run: |
+          ! grep -Eqi '(drive.google.com|docs.google.com|APP-001-W[0-9]{3,5})' app.js motion.js motion.css index.html
