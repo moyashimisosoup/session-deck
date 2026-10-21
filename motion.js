@@ -7,6 +7,7 @@
   let cause = 'initial';
   let scheduled = 0;
   const active = new Set();
+  const activeByElement = new WeakMap();
   const hash = value => {
     let n = 2166136261;
     for (const ch of String(value || '')) n = Math.imul(n ^ ch.charCodeAt(0), 16777619);
@@ -15,10 +16,17 @@
   const cancelAll = () => { for (const a of active) a.cancel(); active.clear(); };
   const animate = (el, frames, options) => {
     if (!el || typeof el.animate !== 'function' || reduced.matches) return;
+    // Repeated open events should not stack animations on the same surface.
+    activeByElement.get(el)?.cancel();
     const a = el.animate(frames, options);
     active.add(a);
-    a.addEventListener('finish', () => active.delete(a), { once: true });
-    a.addEventListener('cancel', () => active.delete(a), { once: true });
+    activeByElement.set(el, a);
+    const forget = () => {
+      active.delete(a);
+      if (activeByElement.get(el) === a) activeByElement.delete(el);
+    };
+    a.addEventListener('finish', forget, { once: true });
+    a.addEventListener('cancel', forget, { once: true });
   };
   const enter = () => {
     if (reduced.matches) return;
@@ -63,7 +71,10 @@
     const el=document.getElementById(id);
     if (!el) continue;
     new MutationObserver(() => {
-      if (el.hidden || reduced.matches) return;
+      if (el.hidden || reduced.matches) {
+        activeByElement.get(el)?.cancel();
+        return;
+      }
       const isDrawer=id==='detailDrawer', isToast=id==='toast';
       const start=isDrawer?'translateX(24px)':isToast?'translate(-50%, 6px)':'translate(-50%, calc(-50% + 10px)) scale(.985)';
       const end=isDrawer?'translateX(0)':isToast?'translate(-50%, 0)':'translate(-50%, -50%) scale(1)';
