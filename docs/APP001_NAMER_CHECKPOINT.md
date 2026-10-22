@@ -1,0 +1,94 @@
+# APP-001 Session Deck Namer — 開発引継ぎ CHECKPOINT
+
+更新：2026-10-23 05:03 JST。履歴保全の補修・回帰・追加監査を完了し、GitHubへ4つの実装Draft PRを保存。補修後の実機検収は未実施。
+コード完成・GitHub保存・CI・実機検収・Web公開は別の状態として扱う。
+
+## 1. 正本・確定指示
+
+- リポジトリ：https://github.com/moyashimisosoup/session-deck
+- 作業場所：`D:\dev\local-env\session-deck`。
+- Chromeの拡張読み込み元：同リポジトリの `extensions\chatgpt-namer`。v0.4.1。
+- 正式形式：`【短い作業名】MMDD・作業番号・具体的内容`。別括弧への変更は撤回済み。記号だけの互換パーサー・形式版・移行を作らない。
+- APP-001はアプリID。作業IDは既存値を使い、未確認時に再発番しない。
+- 専用テスト会話のみ操作する。重要会話、本文、Cookie、認証トークン、他アプリ・TradingSystemのHooks/claim/CIは対象外。
+- 本件のSlack報告は不要とのユーザー訂正があり、停止済み。
+- 自動改名は未実装・OFF。現状は利用者の確認操作で1件だけ改名する。
+
+## 2. 保存状態と担当ブランチ
+
+| 対象 | 状態 |
+|---|---|
+| 実装ブランチ | `feat/namer-local-candidates`、履歴補修HEAD `5de15fc8daeca1c84880d2f0b4f541fc5cb289f5`。再開時HEADは指定の `c7a41f6317b5b1687d7522653d125d285a6b1603` と一致、作業ツリーはクリーンだった |
+| メニュー修正ブランチ | `fix/namer-observed-menu`、HEAD `35bb95f` |
+| 候補本体コミット | `faa5519` |
+| データ移動機能コミット | `d6a5816` |
+| 実機検収文書コミット | `56df792` |
+| ロードマップ編集 | `D:\dev\local-env\session-deck-roadmap`、ローカルHEAD `8385d510e8d54544b7ff1b653350885986744642`。PR #36のリモートHEAD `8574503eeb0de20442e92b1c998d03312bb219fa` とツリー全体が一致。接続ツールで保存したため履歴は分岐しているが、未公開の文書差分はない。ローカルコミットは保持 |
+| 最新取得main | `237db70a6e445892b0264d5e1ff7dd17d85301f7` |
+| mainの追加差分 | 実装の基点 `37fd18e` 以降、命名関連に変更なし。最後の `0dbabbd` 以降も `docs/APP_PORTFOLIO.md` のみ |
+
+この文書自身をコミットすると実装ブランチのHEADは変わる。再開時は `git status --short --branch` と `git rev-parse HEAD` で実値を確認する。GitHubへは既存のローカル履歴を変更せず、所有者接続から機能ごとにコミットした。ローカルとPR #40のコード・テスト・同期スクリプトは再取得後に差分なしを確認。
+
+## 3. GitHub・PR・CI
+
+- PR #35：OPEN、`fix/namer-implicit-text-input`、`b390a2b810daa81815de4912a10775606008077e`。入力欄type省略の修正を再利用済み。
+- #35のnaming CIはSUCCESS：[実行](https://github.com/moyashimisosoup/session-deck/actions/runs/39743877610/job/119707444367)。今回の追加コードを検証したCIではない。
+- [PR #36](https://github.com/moyashimisosoup/session-deck/pull/36)：既存ロードマップの簡素化・正式括弧維持を保存し、PR説明も訂正。HEAD `8574503`。文書のみなのでnaming CIのpaths対象外、当該HEADの追加runなし。
+- GitHub CLIは `yama-books` のまま。今回は接続済みの所有者 `moyashimisosoup` のGitHubツールで保存経路を解消した。認証情報・Cookieの抽出や転用は行わない。
+- 実装は以下のDraft PRへ分割。各PRは直前のブランチをbaseとし、統合順は #37 → #38 → #39 → #40。#37は未マージの#35の入力欄修正を含むため、統合前に重複を整理する。
+
+| PR | 範囲・コードHEAD | 当該コードHEADの命名CI |
+|---|---|---|
+| [#37](https://github.com/moyashimisosoup/session-deck/pull/37) | メニュー限定起動、`ceb8bc422902e0c8bee44fe8e4338c85bbb3c044` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845014718) |
+| [#38](https://github.com/moyashimisosoup/session-deck/pull/38) | 作業候補・確認型改名、`02db161c402db0edbbf741614a3cbff704832344` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845103137) |
+| [#39](https://github.com/moyashimisosoup/session-deck/pull/39) | 保存・読込み、`237a773cadc9ba9aa0a3c0826dad1c9ff83035bc` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845186026) |
+| [#40](https://github.com/moyashimisosoup/session-deck/pull/40) | 同一会話の旧レコード履歴保全、`6f79697b9d0a4d6c839e0c359f5d422c50362819` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845285522) |
+
+#40にはこのCHECKPOINTと既存runbookの保存も追加するため、上表は文書保存前のコードHEAD。最終PR HEADのCIはGitHub上で再照合する。マージ・Web公開は未実施。
+
+## 4. 実装と検証済み範囲
+
+- 対象行の会話リンクが1件であることをボタン探索より先に確認。観測した `data-sidebar-cycle-item` と起動ボタン・メニューのARIA関連で対象を限定する。
+- ArrowDownイベントでメニューを起動し、当該メニューの改名項目だけを選択。入力欄の現在値と対象名も照合する。#35の入力欄修正を維持。
+- `naming-core.js` で生成・検査を共通化。コンソールへ同じ処理を埋め込む同期スクリプトは `scripts/sync_naming_core.mjs`。テストで完全一致を検査する。拡張フォルダをPagesへ配信する必要はない。
+- 既存作業の明示選択・登録、会話との対応、登録日の固定、候補生成、再訪問時の候補表示。
+- popupとページ内パネルに確認ボタンと対応解除。会話ID・期待名を再確認し、別作業・手動変更を保護する。生成や登録だけで改名しない。
+- 現在URLと対象行の定期照合で切替等に追従。本文を読まない。
+- ローカルファイルで保存データの書出し・読戻し。競合する記録は上書きせず停止。
+
+ローカル検証：補修後の `node --test tests/naming.test.mjs` は26 passed / 0 failed、終了0。naming-core / backup / content / popupの構文検査、`node scripts/sync_naming_core.mjs --check`、`git diff --check` も終了0。新しい回帰2件は、リポジトリ外へコピーした補修前コードでは2件とも失敗・終了1で欠落を再現した。文書保存で同じ検査を再実行したとは扱わない。
+
+### 実機成功（v0.4.1・日本語UI・専用会話1件）
+
+1. ユーザーがD側へ保存データを読み込み、成功表示を報告。
+2. 専用会話の再読み込みでパネル1個を確認。未登録時は作業選択要求。
+3. 既存テスト作業番号を画面から明示登録し、正式名を生成。登録だけでは無変更。
+4. 改名ダイアログを事前に開かず、拡張の確認ボタン1回でメニュー起動→入力→保存。画面確認成功を観測。
+5. ページ再読み込み後もサイドバーの名前を保持し、候補との一致を観測。
+6. 新規画面を経由して同じ専用会話へ再訪問。候補が自動再表示され、同名の再適用ボタンは無効。日付跨ぎでも登録日のMMDDを維持。
+
+目標A・B・Cはこの範囲で実機確認済み。他言語・複数タブ・実機での手動変更後と対応解除後は未検収。手動保護・解除は単体テストと架空ブラウザUIの検証のみ。実機の結果と混同しない。
+
+実ID・非公開URL・実タイトル・本文・実画面画像をGitHubやCIへ入れない。パネルだけの証跡はリポジトリ外の `D:\dev\local-env\app001-audit\private\namer-revisit-confirmed.jpg` に保存。公開しない。
+
+## 5. 履歴補修・追加監査と次の作業
+
+同一会話の旧レコードを追加履歴へ保存してから新レコードへ更新する補修を実施。旧レコードとJSONが一致する履歴があれば追加しない。日時・検証情報・未知の追加項目をそのまま保全し、既存履歴と別会話の記録も維持する。再読み込み後に同名を再確認しても履歴を増やさない。補修後の実機確認はまだ行っていない。
+
+- Jevはtypesafeを維持。メニュー修正監査は3 verified、候補本体は4 verified、いずれも矛盾・未支持0。
+- 候補本体の約42KB差分は自動審査で一度拒否された後、ユーザーの具体的差分承認により送信・監査済み。
+- 保存/読込み機能の過去の送信は自動審査が追加ソースとして拒否した。今回、具体的な追加差分・テスト出力への明示承認を受領し、その後に本件確認に必要な範囲への包括承認も受領した。実会話情報・秘密は送信しない。
+- 追加監査：保存/読込みと履歴補修の実差分151変更行・12,618文字、26件の実テスト出力を使用。パックの `send_allowed=true`、秘密検知0、切詰めなしを確認して `jev_verify` を1回実行。応答providerは `typesafe`、4 verified / 0 contradicted / 0 unsupported / 0 needs_review。`jev_gate` は使用していない。
+- 今回のパック：`D:\dev\local-env\app001-audit\transfer-and-history.json`。応答そのもの：`additional-verify-result.json`。以前の `menu.json`、`candidates.json`、`transfer.json` も保持。パックは監査結果そのものではない。
+- 元のopsヘルパーとユーザーのallowlistは変更していない。作業用ヘルパーは同フォルダへコピーし、当該タスクの明示承認をpreflightへ渡すよう調整したもの。機密データや許可外の新差分を送る権限はない。
+
+GitHub所有者接続による保存・PR分割・Codex添付は実施済み。次は最終文書保存後の#40 HEADとCIを再照合し、レビューを経て#35との重複整理と依存順の統合判断へ進む。補修後の実機、他言語・複数タブ・手動変更後・対応解除後の実機検収は別途未完了。マージ・Web公開は実施していない。
+
+確認型の安定性を確認した後に、1作業・1会話へ限定した自動許可の最小設計へ進む。現段階で有効化しない。
+
+## 6. 配置整理・データ移行（完了）
+
+- 本体・編集用worktree・検証ファイル・退避データは `D:\dev\local-env` 配下へ集約。途中で作成した `D:\App\Session-Deck-Namer` は、正本と全6ファイルのハッシュ一致を確認して削除済み。
+- 元の非Gitコピー：`app001-backups\pre-existing-session-deck`。元の拡張ソース4ファイル：`app001-audit\old-extension-source`。
+- ユーザー指定のOneDrive旧フォルダは、D側導入と読戻し成功・実機確認後、全6ファイルを正本とハッシュ照合し `app001-backups\retired-onedrive-namer-source` へ退避して削除。不在を確認済み。
+- ブラウザ内の旧保存データと、ユーザーが書き出した非公開JSONは削除していない。これらを公開しない。
