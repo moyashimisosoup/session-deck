@@ -257,6 +257,46 @@ test('Confirmation renames once, preserves history, and keeps the candidate afte
   assert.equal(status.blocked,'');
 });
 
+test('Renaming archives an imported record for the same conversation without losing opaque metadata',async()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
+  const prior={id,title:'旧チャット',updatedAt:'2025-01-02T03:04:05.000Z',verification:'legacy_import',extra:{source:'synthetic fixture'}};
+  const original=JSON.stringify(prior);
+  const incoming=vm.SessionDeckBackup.decode(vm.SessionDeckBackup.encode({sessionDeckNamerRecords:{[id]:prior}}));
+  const store=vm.SessionDeckBackup.merge({},incoming);
+  const sim=simulateChatGPT({store});
+  const bound=await bind(sim);
+  assert.equal((await sim.send({type:'CONFIRM_CANDIDATE',expectedId:id,title:bound.candidate})).status,'ui_verified');
+  const history=store['sessionDeckNamerHistory:'+id];
+  assert.equal(history.length,2);
+  assert.equal(JSON.stringify(history[0]),original);
+  assert.equal(history[1].title,bound.candidate);
+  assert.equal(history[1].verification,'ui_observed');
+  assert.equal(JSON.stringify(store.sessionDeckNamerRecords[id]),JSON.stringify(history[1]));
+  const reload=simulateChatGPT({store,initialTitle:sim.getTitle()});
+  assert.equal((await reload.send({type:'CONFIRM_CANDIDATE',expectedId:id,title:bound.candidate})).status,'already');
+  assert.equal(store['sessionDeckNamerHistory:'+id].length,2);
+});
+
+test('Renaming preserves existing history and archives only an absent prior record',async()=>{
+  const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
+  const prior={id,title:'旧チャット',updatedAt:'2025-01-02T03:04:05.000Z',verification:'legacy_import'};
+  const older={...prior,updatedAt:'2024-01-02T03:04:05.000Z',verification:'older_import'};
+  for(const alreadyArchived of [false,true]){
+    const initial=alreadyArchived?[older,JSON.parse(JSON.stringify(prior))]:[older];
+    const store={sessionDeckNamerRecords:{[id]:prior,'other-fixture':older},['sessionDeckNamerHistory:'+id]:initial};
+    const sim=simulateChatGPT({store});
+    const bound=await bind(sim);
+    assert.equal((await sim.send({type:'CONFIRM_CANDIDATE',expectedId:id,title:bound.candidate})).status,'ui_verified');
+    const history=store['sessionDeckNamerHistory:'+id];
+    assert.equal(history.length,3);
+    assert.equal(JSON.stringify(history[0]),JSON.stringify(older));
+    assert.equal(JSON.stringify(history[1]),JSON.stringify(prior));
+    assert.equal(history[2].title,bound.candidate);
+    assert.equal(JSON.stringify(store.sessionDeckNamerRecords['other-fixture']),JSON.stringify(older));
+  }
+});
+
 test('Manual changes remain protected after re-registration; removing a mapping disables confirmation',async()=>{
   const sim=simulateChatGPT();
   const bound=await bind(sim);
