@@ -1,5 +1,7 @@
 # Session Deck 命名操作 v1 導入手順・安全境界
 
+本書の単一会話改名テストは **Phase 0の実機検収**として維持する。継続的な命名管理の最終目標、規則の統一、会話検出、作業単位の条件付き自動改名、非公開台帳連携は[Phase 0〜4の実運用ロードマップ](NAMING_AUTOMATION_ROADMAP.md)を参照。後続機能は計画段階であり、本書の現行拡張が自動改名に対応したことを意味しない。
+
 - 作業ID: NAME-01 / NAME-02
 - 版: 0.1 / 2026-10-17 JST
 - 対象: Session Deck, ChatGPT Web, ChatGPT iOS, Claude Code, Codex CLI
