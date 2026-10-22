@@ -8,12 +8,13 @@
 
 | 照合対象 | 2026-10-22 JSTの確認結果 |
 |---|---|
-| 最新main | `df111da4cfacf79097234d27f63e9703afda5d56` |
+| 監査開始時の最新main | `df111da4cfacf79097234d27f63e9703afda5d56` |
+| 公開準備中のmain再照合 | `163996f5ebea1e39199a5a9c1834f7816b62ec98`。開始時との差分は `docs/APP_PORTFOLIO.md` のみで、命名関連ファイルに変更なし |
 | mainの拡張 | manifest v0.3.0。content.js、popup.js、popup.html、manifest.jsonを確認 |
 | PR #29 | v0.3メニュー互換修正、マージ済み |
 | PR #35 | v0.3.1入力欄修正、Draft・未マージ。head `b390a2b810daa81815de4912a10775606008077e` |
 | mainの既存命名テスト | 本監査で `node --test tests/naming.test.mjs` を実行、8/8成功・終了0 |
-| mainの最新配信CI | [run 39745858896](https://github.com/moyashimisosoup/session-deck/actions/runs/39745858896) success。配信CIは命名実機検収の代替ではない |
+| 監査開始時mainの配信CI | [run 39745858896](https://github.com/moyashimisosoup/session-deck/actions/runs/39745858896) success。配信CIは命名実機検収の代替ではない |
 | PR #35の命名CI | [run 39743877610](https://github.com/moyashimisosoup/session-deck/actions/runs/39743877610) success、回帰テスト10件 |
 | 実機 | v0.3.1で本体UIから先に開いた改名ダイアログを利用し、拡張による入力・保存と再読み込み後の保持を確認。メニュー起動を含む全工程は未合格 |
 
