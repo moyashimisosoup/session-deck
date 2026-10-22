@@ -61,6 +61,27 @@
   $('unbind').addEventListener('click',()=>void operate('UNBIND_WORK'));
   $('confirm').addEventListener('click',()=>void operate('CONFIRM_CANDIDATE',{title:snapshot?.candidate},true));
   $('rename').addEventListener('click',()=>void operate('RENAME',{title:$('desired').value.trim()},true));
+  $('export').addEventListener('click',async()=>{
+    try{
+      const text=SessionDeckBackup.encode(await chrome.storage.local.get(null));
+      const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+      const link=document.createElement('a');link.href=url;link.download='session-deck-namer-backup.json';link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      $('backupResult').textContent='保存ファイルのダウンロードを開始しました。保存先を確認してください。';
+    }catch(error){$('backupResult').textContent=error.message;}
+  });
+  $('import').addEventListener('change',async()=>{
+    const file=$('import').files?.[0];if(!file)return;
+    try{
+      if(file.size>5_000_000)throw Error('保存ファイルが大きすぎます。');
+      const data=SessionDeckBackup.decode(await file.text());
+      const merged=SessionDeckBackup.merge(await chrome.storage.local.get(null),data);
+      await chrome.storage.local.set(merged);
+      $('backupResult').textContent='保存データを読み込みました。旧拡張の保存データは削除していません。';
+      if(activeTab)await refresh();
+    }catch(error){$('backupResult').textContent=error.message;}
+    finally{$('import').value='';}
+  });
   (async()=>{
     const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
     if(!tab?.url?.startsWith('https://chatgpt.com/'))throw Error('ChatGPT Webのタブを選択してください。');
