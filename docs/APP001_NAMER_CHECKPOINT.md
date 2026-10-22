@@ -114,3 +114,13 @@ GitHub所有者接続による保存・PR分割・Codex添付は実施済み。#
 - 元の非Gitコピー：`app001-backups\pre-existing-session-deck`。元の拡張ソース4ファイル：`app001-audit\old-extension-source`。
 - ユーザー指定のOneDrive旧フォルダは、D側導入と読戻し成功・実機確認後、全6ファイルを正本とハッシュ照合し `app001-backups\retired-onedrive-namer-source` へ退避して削除。不在を確認済み。
 - ブラウザ内の旧保存データと、ユーザーが書き出した非公開JSONは削除していない。これらを公開しない。
+
+## 7. 統合確認・レビュー（2026-10-23 JST）
+
+- 最新main `237db70` に#37〜#42と#36をローカル統合し、競合なし。#35のtype省略対応と回帰は#37に含まれるため、別途二重統合しない。実機読み込み元の作業場所は変更していない。
+- Windowsの新規チェックアウトで `core.autocrlf=true` によるCRLF変換が共通生成処理の一致検査を壊す問題を再現（26成功・1失敗、終了1）。`.gitattributes`で `naming.html` と `extensions/chatgpt-namer/naming-core.js` のLFを固定し、新しいチェックアウトでは27成功・0失敗となった。
+- 新しい統合チェックアウト `app001-audit\integration-fresh-checkout` で27テスト、共通生成処理同期、全統合差分の空白検査が成功・終了0。構文検査も成功。統合元 `session-deck-integration-review` を含め検証用worktreeを保持している。追加した末尾空行2か所も解消した。
+- 命名CIをWindows/Linuxの2環境へ拡張し、`.gitattributes`変更でも起動して同期検査を行う設定を追加。アプリの動作処理は変更せず、再読み込み操作は不要。
+- 小修正の `jev_verify` はtypesafeで3 verified / 0 contradicted / 0 unsupported。統合全体の公開済み9ファイルと承認済み設定2ファイルに対する `jev_review` は `escalate`、理由は `confidence_below_review` のみ、`safe_to_apply=0.61`、composite約0.763。主な限定要因は影響範囲の確度、content.js等のテスト不足評価の確度、共通生成処理の仕様一致評価の確度。具体的な不具合指摘は返されていないが、自動合格として扱わずレビュー待ちにする。同じレビューの再送はしない。`jev_gate`は未使用。
+- 証跡は `app001-audit\integration-lf-ci.json` と `integration-judgments.json`。実会話情報は送信していない。ロードマップも現在の実機検収状況へ更新し、既存PR #36へ反映する。
+- mainへの反映には `naming.html` の変更が含まれ、既存 `.github/workflows/deploy-pages.yml` のpush条件によりPages配信処理が起動する。マージ・配信を行う前に、この具体的な影響とレビューの保留を示して利用者へ確認する。自動改名はOFFのまま。

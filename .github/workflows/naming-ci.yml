@@ -2,6 +2,7 @@ name: Session Naming checks
 on:
   pull_request:
     paths:
+      - '.gitattributes'
       - 'naming.html'
       - 'extensions/chatgpt-namer/**'
       - 'tests/naming.test.mjs'
@@ -11,7 +12,10 @@ permissions:
   contents: read
 jobs:
   naming:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +23,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/naming.test.mjs
+      - run: node scripts/sync_naming_core.mjs --check
       - run: |
           node --check extensions/chatgpt-namer/content.js
           node --check extensions/chatgpt-namer/popup.js
