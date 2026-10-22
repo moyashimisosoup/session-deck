@@ -68,4 +68,3 @@ ChatGPTプロジェクト設定へ追加する[最新の貼り付け用指示](C
 - 巨大なHANDOFF歴史の全文を毎回読み込まず、担当領域の最新の該当節だけ参照する。
 
 運用詳細：[CLOUD_SESSION_PROTOCOL.md](CLOUD_SESSION_PROTOCOL.md)／[Session Deck私的保存PoC](PRIVATE_SESSION_STORE_PLAN.md)。
-
