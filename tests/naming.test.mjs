@@ -7,6 +7,7 @@ const root=new URL('../',import.meta.url);
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const html=read('naming.html');
 const content=read('extensions/chatgpt-namer/content.js');
+const core=read('extensions/chatgpt-namer/naming-core.js');
 const popup=read('extensions/chatgpt-namer/popup.js');
 const manifest=JSON.parse(read('extensions/chatgpt-namer/manifest.json'));
 
@@ -49,9 +50,9 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
   assert.equal(element('openChat').disabled,false);
 });
 
-function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null}={}){
+function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット'}={}){
   const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
-  let title='旧チャット',menuOpen=false,editing=dialogInputTypes!==null,listener;
+  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener;
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>row};
   const row={querySelectorAll:s=>s==='a[href*="/c/"]'?(mixedRow?[anchor,{href:'https://chatgpt.com/c/other-chat'}]:[anchor]):[menuButton]};
@@ -87,19 +88,18 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     },
     querySelector:s=>null
   };
-  const store={};
   const chrome={runtime:{onMessage:{addListener(fn){listener=fn;}}},
-    storage:{local:{get:async k=>({[k]:store[k]}),set:async items=>Object.assign(store,items)}}};
+    storage:{local:{get:async k=>k===null?{...store}:{[k]:store[k]},set:async items=>Object.assign(store,items),remove:async k=>{delete store[k];}}}};
   const loc={href:'https://chatgpt.com/c/'+id};
   const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},HTMLInputElement:class {},
     InputEvent:class{constructor(type,props){this.type=type;this.props=props}},
     Event:class{constructor(type){this.type=type}},
     KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console};
-  runInNewContext(content,vm);
-  const send=message=>new Promise(resolve=>listener(message,null,resolve));
+  runInNewContext(core+'\n'+content,vm);
+  const send=message=>new Promise(resolve=>listener({expectedTitle:title,...message},null,resolve));
   // A foreign menu has neither ownership relation, even when its label matches.
   if(foreignMenu){menu.id='unrelated-menu';menuButton.getAttribute=()=>null;}
-  return {send,id,getTitle:()=>title};
+  return {send,id,store,getTitle:()=>title,setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
 }
 test('ChatGPT extension only changes active ID and verifies UI title',async()=>{
   const sim=simulateChatGPT();
@@ -192,6 +192,108 @@ test('ChatGPT refuses an already open editor for a different title',async()=>{
 test('ChatGPT stops if navigation happens while the menu opens',async()=>{
   const sim=simulateChatGPT({onMenu:loc=>{loc.href='https://chatgpt.com/c/other-chat';}});
   const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【テスト】1022・TEST-001・切替時の停止'});
+  assert.equal(result.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('Console embeds the exact shared generator; calendar dates and titles use one rule',()=>{
+  assert.equal(html.match(/\/\* NAMING_CORE_START \*\/\n([\s\S]*?)\n\/\* NAMING_CORE_END \*\//)[1],core.trim());
+  const vm={Intl,Date};runInNewContext(core,vm);
+  const naming=vm.SessionDeckNaming;
+  const fields={group:'命名管理',date:'1022',workId:'NAME-01',detail:'候補を自動生成'};
+  assert.equal(naming.generate(fields),'【命名管理】1022・NAME-01・候補を自動生成');
+  for(const date of ['0000','0230','0431','1301'])assert.equal(naming.generate({...fields,date}),'');
+  assert.ok(naming.generate({...fields,date:'0229'}));
+  assert.equal(naming.generate({...fields,workId:''}),'');
+  assert.equal(naming.parse('〖命名管理〗1022・NAME-01・候補を自動生成'),null);
+  assert.equal(naming.today(new Date('2026-10-21T16:00:00Z')),'1022');
+});
+
+const work={workId:'TEST-001',group:'命名テスト',detail:'登録した作業からの候補'};
+async function bind(sim){
+  return sim.send({type:'BIND_WORK',expectedId:sim.id,work,date:'1022'});
+}
+test('An unregistered conversation needs explicit work selection and never guesses an ID',async()=>{
+  const sim=simulateChatGPT();
+  const initial=await sim.send({type:'GET_STATUS'});
+  assert.equal(initial.candidate,'');
+  assert.match(initial.blocked,/作業未登録/);
+  const refused=await sim.send({type:'BIND_WORK',expectedId:sim.id,work:{...work,workId:''},date:'1022'});
+  assert.equal(refused.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('Stored work produces the same candidate after page reload and conversation revisit',async()=>{
+  const sim=simulateChatGPT();
+  const bound=await bind(sim);
+  assert.equal(bound.ok,true);
+  assert.equal(sim.getTitle(),'旧チャット');
+  assert.equal(bound.candidate,'【命名テスト】1022・TEST-001・登録した作業からの候補');
+  sim.navigate('/c/other-chat');
+  const other=await sim.send({type:'GET_STATUS'});
+  assert.equal(other.candidate,'');
+  const wrong=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate});
+  assert.equal(wrong.ok,false);
+  sim.navigate('/c/'+sim.id);
+  assert.equal((await sim.send({type:'GET_STATUS'})).candidate,bound.candidate);
+  const reloaded=simulateChatGPT({store:sim.store});
+  const revisited=await reloaded.send({type:'GET_STATUS'});
+  assert.equal(revisited.candidate,bound.candidate);
+  assert.equal(revisited.blocked,'');
+});
+
+test('Confirmation renames once, preserves history, and keeps the candidate after reload',async()=>{
+  const sim=simulateChatGPT();
+  const bound=await bind(sim);
+  const result=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate});
+  assert.equal(result.status,'ui_verified');
+  assert.equal(sim.store['sessionDeckNamerHistory:'+sim.id].length,1);
+  const again=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate});
+  assert.equal(again.status,'already');
+  assert.equal(sim.store['sessionDeckNamerHistory:'+sim.id].length,1);
+  const reload=simulateChatGPT({store:sim.store,initialTitle:sim.getTitle()});
+  const status=await reload.send({type:'GET_STATUS'});
+  assert.equal(status.currentTitle,status.candidate);
+  assert.equal(status.blocked,'');
+});
+
+test('Manual changes remain protected after re-registration; removing a mapping disables confirmation',async()=>{
+  const sim=simulateChatGPT();
+  const bound=await bind(sim);
+  sim.setTitle('手動で変更した名前');
+  assert.match((await sim.send({type:'GET_STATUS'})).blocked,/手動変更/);
+  assert.equal((await bind(sim)).ok,true);
+  assert.match((await sim.send({type:'GET_STATUS'})).blocked,/手動変更/);
+  const protectedResult=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate});
+  assert.equal(protectedResult.ok,false);
+  const removed=await sim.send({type:'UNBIND_WORK',expectedId:sim.id});
+  assert.equal(removed.candidate,'');
+  assert.equal((await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate})).ok,false);
+  assert.equal(sim.getTitle(),'手動で変更した名前');
+});
+
+test('Existing official names for a different work cannot be bound and old records are retained',async()=>{
+  const sim=simulateChatGPT({initialTitle:'【他作業】1022・OTHER-001・手動保護の確認'});
+  assert.equal((await bind(sim)).ok,false);
+  const store={sessionDeckNamerRecords:{'previous-chat':{title:'既存の履歴'}}};
+  const fresh=simulateChatGPT({store});await bind(fresh);
+  assert.equal(store.sessionDeckNamerRecords['previous-chat'].title,'既存の履歴');
+});
+
+test('New conversation ID is detected without reusing the previous mapping',async()=>{
+  const sim=simulateChatGPT();await bind(sim);
+  sim.navigate('/');
+  assert.equal((await sim.send({type:'GET_STATUS'})).id,null);
+  sim.navigate('/c/new-chat-1234');
+  const status=await sim.send({type:'GET_STATUS'});
+  assert.equal(status.id,'new-chat-1234');
+  assert.equal(status.binding,null);
+  assert.equal(status.candidate,'');
+});
+
+test('A stale expected title is rejected before changing the page',async()=>{
+  const sim=simulateChatGPT();const bound=await bind(sim);
+  const result=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,expectedTitle:'別の名前',title:bound.candidate});
   assert.equal(result.ok,false);
   assert.equal(sim.getTitle(),'旧チャット');
 });

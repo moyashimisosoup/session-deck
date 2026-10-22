@@ -8,6 +8,7 @@ h1{font-size:17px;margin:0 0 9px}.tip{color:#63748b;font-size:12px;margin:0 0 14
 #session{overflow-wrap:anywhere;white-space:pre-wrap;font-size:12px;color:#45556c}
 label{display:block;font-weight:700;font-size:12px;margin:0 0 7px}
 textarea{width:100%;min-height:75px;resize:vertical;box-sizing:border-box;border:1px solid #ccd7e4;border-radius:9px;padding:10px;font:13px/1.5 inherit;color:inherit;background:white}
+input,select{width:100%;box-sizing:border-box;padding:8px;margin-bottom:9px;border:1px solid #ccd7e4;border-radius:7px;font:inherit}details{margin:12px 0}summary{cursor:pointer}
 button{border:1px solid #d4dfed;background:white;color:#284064;padding:10px;border-radius:9px;cursor:pointer;font:600 12px inherit;min-height:42px}
 button.primary{background:#4464dd;border-color:#4464dd;color:#fff;width:100%;margin-top:12px}
 button:disabled{opacity:.5;cursor:not-allowed}
@@ -20,10 +21,27 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 <p class="tip">開いているChatGPT Webの会話を、明示操作で1件だけ変更します。</p>
 <div class="card"><strong>現在の会話</strong><div id="session">確認中…</div></div>
 <a class="link" href="https://moyashimisosoup.github.io/session-deck/naming.html" target="_blank" rel="noopener noreferrer">命名コンソールを開く ↗</a>
-<label for="desired">正式名称（コピーした名前を貼り付け）</label>
+<div class="card">
+<label for="work">登録済みの作業</label><select id="work"><option value="">作業を選択してください</option></select>
+<label for="date">日付（JST / MMDD）</label><input id="date" maxlength="4" inputmode="numeric">
+<button id="bind" disabled>選択した作業をこの会話に登録</button>
+<button id="unbind" disabled>この会話との対応を解除</button>
+<details><summary>既存の作業番号で新しく登録</summary>
+<label for="workId">作業番号（台帳の既存ID）</label><input id="workId" maxlength="30" placeholder="既存の作業番号を入力">
+<label for="group">短い作業名</label><input id="group" maxlength="20">
+<label for="detail">具体的内容</label><input id="detail" maxlength="70">
+<button id="register" disabled>作業を登録してこの会話に対応付ける</button></details>
+<p class="note">会話IDから作業は推測しません。対応・作業情報はこのブラウザ内に保存します。</p>
+</div>
+<label for="candidate">登録済み作業からの候補</label><p id="candidate"></p>
+<p id="protection" role="status"></p>
+<button id="confirm" class="primary" disabled>確認してこの会話を改名</button>
+<details><summary>正式名称を手入力する</summary>
+<label for="desired">正式名称</label>
 <textarea id="desired" spellcheck="false" placeholder="【作業名】1017・SD-012・具体的内容"></textarea>
 <button id="rename" class="primary" disabled>この会話の名前を変更</button>
+</details>
 <p id="result" role="status" aria-live="polite"></p>
 <p class="note">自動・一括変更はしません。ChatGPT画面から変更成功を確認できない場合は「未確認」と表示します。ログイン情報・会話本文・認証情報は取得しません。</p>
-<script src="popup.js"></script>
+<script src="naming-core.js"></script><script src="popup.js"></script>
 </body></html>
