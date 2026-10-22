@@ -23,7 +23,7 @@ START、MILESTONE、CHECKPOINT、HANDOFF、END等で必要な場合だけ以下�
 
 ```text
 APP-007 / APP-007-Wnnnn（未割当なら未割当）
-推奨チャット名: 〖古典・conj〗1017・01・活用ヒント配置
+推奨チャット名: 【古典活用】1017・01・活用ヒント配置
 開始: 未確認 ／ 最終記録: 2026-10-17 10:42 JST（保存確認済みの場合のみ）
 現在: PRレビュー待ち ／ 公開: 未確認
 次: PR #118 の差分とCIを再確認
@@ -68,3 +68,4 @@ ChatGPTプロジェクト設定へ追加する[最新の貼り付け用指示](C
 - 巨大なHANDOFF歴史の全文を毎回読み込まず、担当領域の最新の該当節だけ参照する。
 
 運用詳細：[CLOUD_SESSION_PROTOCOL.md](CLOUD_SESSION_PROTOCOL.md)／[Session Deck私的保存PoC](PRIVATE_SESSION_STORE_PLAN.md)。
+
