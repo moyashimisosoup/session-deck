@@ -22,7 +22,8 @@
     const backup=JSON.parse(text);
     if(backup?.app!=='Session Deck Namer'||!object(backup.data))throw Error('Session Deck Namerの保存データではありません。');
     for(const [key,value] of Object.entries(backup.data)){
-      if(!known(key)||!object(value)&&!Array.isArray(value))throw Error('保存データの項目を確認してください。');
+      const validContainer=key.startsWith('sessionDeckNamerHistory:')?Array.isArray(value):object(value);
+      if(!known(key)||!validContainer)throw Error('保存データの項目を確認してください。');
     }
     validate(backup.data);
     return backup.data;

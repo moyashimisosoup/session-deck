@@ -1,6 +1,6 @@
 # APP-001 Session Deck Namer — 開発引継ぎ CHECKPOINT
 
-更新：2026-10-23 05:03 JST。履歴保全の補修・回帰・追加監査を完了し、GitHubへ4つの実装Draft PRを保存。補修後の実機検収は未実施。
+更新：2026-10-23 JST。履歴保全に続くレビューで保存ファイルのコンテナ型検査不足を補修し、27件の回帰と追加監査を実施。補修後の実機検収は操作経路の停止により未完了。
 コード完成・GitHub保存・CI・実機検収・Web公開は別の状態として扱う。
 
 ## 1. 正本・確定指示
@@ -44,7 +44,7 @@
 | [#39](https://github.com/moyashimisosoup/session-deck/pull/39) | 保存・読込み、`237a773cadc9ba9aa0a3c0826dad1c9ff83035bc` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845186026) |
 | [#40](https://github.com/moyashimisosoup/session-deck/pull/40) | 同一会話の旧レコード履歴保全、`6f79697b9d0a4d6c839e0c359f5d422c50362819` | [success](https://github.com/moyashimisosoup/session-deck/actions/runs/39845285522) |
 
-#40にはこのCHECKPOINTと既存runbookの保存も追加するため、上表は文書保存前のコードHEAD。最終PR HEADのCIはGitHub上で再照合する。マージ・Web公開は未実施。
+#40の文書保存後HEAD `33f63ecac79282e75e3c3b1e866534113d2d4eb9` でも[命名CI成功](https://github.com/moyashimisosoup/session-deck/actions/runs/39845614086)を確認済み。コード・テスト・CHECKPOINT・runbookは再取得後にローカル保存内容と一致。マージ・Web公開は未実施。
 
 ## 4. 実装と検証済み範囲
 
@@ -82,7 +82,15 @@
 - 今回のパック：`D:\dev\local-env\app001-audit\transfer-and-history.json`。応答そのもの：`additional-verify-result.json`。以前の `menu.json`、`candidates.json`、`transfer.json` も保持。パックは監査結果そのものではない。
 - 元のopsヘルパーとユーザーのallowlistは変更していない。作業用ヘルパーは同フォルダへコピーし、当該タスクの明示承認をpreflightへ渡すよう調整したもの。機密データや許可外の新差分を送る権限はない。
 
-GitHub所有者接続による保存・PR分割・Codex添付は実施済み。次は最終文書保存後の#40 HEADとCIを再照合し、レビューを経て#35との重複整理と依存順の統合判断へ進む。補修後の実機、他言語・複数タブ・手動変更後・対応解除後の実機検収は別途未完了。マージ・Web公開は実施していない。
+GitHub所有者接続による保存・PR分割・Codex添付は実施済み。#35の修正は#37に含まれるため、統合前に重複を整理する。補修後の実機、他言語・複数タブ・手動変更後・対応解除後の実機検収は未完了。マージ・Web公開は実施していない。
+
+### 継続レビュー：保存ファイルの型検査と実機経路
+
+- `backup.decode` が記録・作業・会話対応に配列、履歴にオブジェクトを受け付けていた。後続処理と型が合わないため、記録・作業・対応はオブジェクト、履歴は配列に限定し、保存前に拒否する補修を追加した。旧レコード内部の未知フィールドは維持する。
+- ローカル補修コミット `a567f6f`。追加回帰は補修前に失敗（終了1）、補修後の全27件は成功（終了0）。backup.jsの構文とdiff検査も成功。TypeSafe/Jevの `jev_verify` は3 verified / 0 contradicted / 0 unsupported / 0 needs_review。監査パックは `app001-audit\backup-container-review.json`、応答は `backup-container-verify-result.json`。本件確認の包括承認の範囲で、コード差分と架空テスト出力のみ送信した。
+- 専用テスト会話の拡張パネルだけを読取り、パネル1個・現在名と候補の一致を確認。本文・他会話の内容は検査しない。
+- 拡張を確実に再読み込みするためWindows操作を試したが、現在のブラウザURLをポリシー上十分な確度で判定できないという理由でツールが停止。入力・設定変更・改名は行っていない。拡張一覧の内部タブもブラウザ接続からは操作できない。
+- 次の実機操作は利用者による既存拡張の「再読み込み」と専用会話のページ再読み込み。その完了後に実機検収を再開する。停止したWindows操作を別経路で迂回せず、未検収を成功扱いしない。Slack報告はユーザー指示により行わない。
 
 確認型の安定性を確認した後に、1作業・1会話へ限定した自動許可の最小設計へ進む。現段階で有効化しない。
 
