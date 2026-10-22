@@ -1,4 +1,4 @@
-/* Session Deck Namer 0.3.0: explicit, scoped, fail-closed ChatGPT Web rename helper. */
+/* Session Deck Namer 0.3.1: explicit, scoped, fail-closed ChatGPT Web rename helper. */
 (() => {
   'use strict';
   const TITLE=/^【[^】\n・]{1,20}】(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01])・[^・\s]{1,30}・[^\r\n]{2,70}$/u;
@@ -74,7 +74,8 @@
     if(found.length===1)return found[0];
     const dialogs=[...document.querySelectorAll('[role="dialog"]')].filter(x=>x.getClientRects().length);
     if(dialogs.length!==1)return null;
-    const inputs=[...dialogs[0].querySelectorAll('input[type="text"]')];
+    // The live popup omits type; the DOM property still defaults to "text".
+    const inputs=[...dialogs[0].querySelectorAll('input')].filter(input=>input.type==='text');
     return inputs.length===1?inputs[0]:null;
   }
   function setReactValue(input,title){
