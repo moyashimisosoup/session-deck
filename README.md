@@ -2,6 +2,10 @@
 
 **ChatGPT・Claude Code・Codexの作業とセッションを横断して俯瞰するWebダッシュボード。**
 
+### 共通デザイン参考資料
+
+- [デザインライブラリ](docs/design-library/README.md)：アプリ・資料・画像制作に共通で使う参照台帳。初回登録は [COL-0001「AI配色の名前100選」](docs/design-library/COL-0001_AI_COLOR_NAMES_100.md)（外部画像4枚・出典・用途を保存）。参考資料と本番素材は区別します。
+
 > **2つの表示を分離しています。** `index.html` は架空セッションの操作デモ、`portfolio.html` はGitHubで管理する実アプリ台帳と**公開リポジトリの観測メタデータ**を扱う読取り専用画面です。実際のChatGPT/Claude Code/Codexセッションを自動取得する機能ではありません。
 
 ## デモを動かす
