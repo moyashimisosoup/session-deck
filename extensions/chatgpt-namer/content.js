@@ -1,11 +1,18 @@
-/* Session Deck Namer 0.4.0: local candidates and confirmed, scoped rename. */
+/* Session Deck Namer 0.5.0: explicit single-conversation automatic grant. */
 (() => {
   'use strict';
   const naming=globalThis.SessionDeckNaming;
   const LABELS=new Set(['rename','rename conversation','rename chat','change chat name','名前を変更','名前の変更','名前を変更する','会話名を変更','会話の名前を変更','チャット名を変更','チャットの名前を変更','タイトルを変更','タイトルの変更','名称変更','名前を編集']);
   const STORAGE='sessionDeckNamerRecords';
   const WORK='sessionDeckNamerWork:', BINDING='sessionDeckNamerBinding:', HISTORY='sessionDeckNamerHistory:';
+  const AUTO='sessionDeckNamerAuto', AUTO_STOP='sessionDeckNamerAutoRevoked';
   let busy=false;
+  let checkingAuto=false;
+  const locks=globalThis.navigator?.locks;
+  // Shared by all ChatGPT tabs on this device. Never queue a stale rename.
+  const exclusive=fn=>locks?.request
+    ? locks.request('session-deck-namer-write',{ifAvailable:true},lock=>{if(!lock)throw Error('別タブの処理中です。');return fn();})
+    : Promise.reject(Error('タブ間の排他制御を利用できません。'));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const clean=s=>String(s||'').trim().replace(/\s+/g,' ');
   function currentId(u=location.href){
@@ -117,6 +124,7 @@
     if(previous===title)return {status:'already',title,verification:'ui_observed'};
     busy=true;
     try{
+      if(guard)await guard();
       // We only mutate a currently visible, uniquely matched conversation row.
       let input=editor();
       if(!input){
@@ -179,7 +187,9 @@
     else if(!candidate)blocked='作業情報または日付を確認してください。';
     else if(parsed && parsed.workId!==binding.workId)blocked='表示名が別の作業に属するため保護しています。';
     else if(currentTitle!==(record?.title||binding.baselineTitle))blocked='手動変更された名前を保護しています。';
-    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked};
+    const storedAuto=store[AUTO]||null;
+    const auto=storedAuto&&store[AUTO_STOP]===storedAuto.grantId?{...storedAuto,state:'stopped'}:storedAuto;
+    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked,auto,autoAvailable:Boolean(locks?.request)};
   }
   function requireId(msg){
     const id=currentId();
@@ -211,8 +221,60 @@
       const latest=await status();
       if(latest.id!==id||latest.blocked||latest.candidate!==msg.title||latest.binding?.workId!==snapshot.binding.workId)throw Error('作業との対応または対象が変わったため停止しました。');
     };
-    return {ok:true,...await rename(id,snapshot.candidate,msg.expectedTitle,guard)};
+    return {ok:true,...await exclusive(()=>rename(id,snapshot.candidate,msg.expectedTitle,guard))};
   }
+  async function stopAuto(){
+    const grant=(await chrome.storage.local.get(AUTO))[AUTO];
+    // Separate revocation survives a simultaneous running/completed state write.
+    if(grant)await chrome.storage.local.set({[AUTO_STOP]:grant.grantId});
+    return status();
+  }
+  async function enableAuto(msg){
+    return exclusive(async()=>{
+      const id=requireId(msg), s=await status();
+      if(s.blocked)throw Error(s.blocked);
+      if(s.currentTitle!==msg.expectedTitle||s.candidate!==msg.title)throw Error('対象と候補を確認し直してください。');
+      if(s.auto?.state==='running')throw Error('前回の処理が未確認です。自動改名をOFFにして画面を確認してください。');
+      if(editor()||document.querySelectorAll('[role="menu"]').length)throw Error('開いている編集画面・メニューを閉じてください。');
+      if(currentId()!==id||observedName(id)!==s.currentTitle)throw Error('許可中に対象が変わりました。');
+      await chrome.storage.local.set({[AUTO]:{grantId:crypto.randomUUID(),id,workId:s.binding.workId,title:s.candidate,baseline:s.currentTitle,state:'enabled'}});
+      return status();
+    });
+  }
+  async function runAuto(){
+    if(checkingAuto||busy||document.visibilityState!=='visible'||!document.hasFocus())return;
+    checkingAuto=true;
+    try{
+      await exclusive(async()=>{
+        const s=await status(), grant=s.auto;
+        if(!grant||grant.state!=='enabled'||grant.id!==s.id)return;
+        const update=async(state)=>{
+          const latest=(await chrome.storage.local.get(AUTO))[AUTO];
+          if(latest?.grantId===grant.grantId&&['enabled','running'].includes(latest.state))
+            await chrome.storage.local.set({[AUTO]:{...latest,state}});
+        };
+        if(s.blocked||s.candidate!==grant.title||s.binding?.workId!==grant.workId||
+          (s.currentTitle!==grant.baseline&&s.currentTitle!==grant.title))return update('stopped');
+        // Matching names require no save, including on reload or in another tab.
+        if(s.currentTitle===grant.title)return;
+        // Never adopt an editor or menu that the user already opened.
+        if(editor()||document.querySelectorAll('[role="menu"]').length)return update('stopped');
+        await update('running'); // Persist before any UI action; interrupted runs never retry.
+        const guard=async()=>{
+          const latest=await status();
+          if(latest.auto?.grantId!==grant.grantId||latest.auto.state!=='running'||latest.id!==grant.id||
+            latest.blocked||latest.candidate!==grant.title||latest.binding?.workId!==grant.workId||
+            document.visibilityState!=='visible'||!document.hasFocus())throw Error('自動改名の条件が変わったため停止しました。');
+        };
+        try{
+          await rename(grant.id,grant.title,grant.baseline,guard);
+          await update('completed');
+        }catch{await update('stopped');}
+      });
+    }catch{/* Unavailable lock/storage: leave the grant unchanged and perform no UI write. */}
+    finally{checkingAuto=false;}
+  }
+  setInterval(runAuto,800);
   chrome.runtime.onMessage.addListener((msg,_sender,respond)=>{
     (async()=>{
       if(msg?.type==='GET_STATUS'){
@@ -220,15 +282,18 @@
       }
       if(msg?.type==='BIND_WORK')return bindWork(msg);
       if(msg?.type==='CONFIRM_CANDIDATE')return confirmCandidate(msg);
+      if(msg?.type==='ENABLE_AUTO')return enableAuto(msg);
+      if(msg?.type==='STOP_AUTO')return stopAuto();
       if(msg?.type==='UNBIND_WORK'){
         const id=requireId(msg);
+        await stopAuto();
         await chrome.storage.local.remove(BINDING+id);
         return status();
       }
       if(msg?.type==='RENAME'){
         const id=requireId(msg);
         const title=String(msg.title||'').trim();
-        return {ok:true,...await rename(id,title,msg.expectedTitle)};
+        return {ok:true,...await exclusive(()=>rename(id,title,msg.expectedTitle))};
       }
       throw Error('未対応の操作です。');
     })().then(respond).catch(err=>respond({ok:false,error:err.message}));
@@ -236,7 +301,7 @@
   });
 
   // Observe only route and the uniquely matched sidebar title, never transcript.
-  // No worker, network request, injected page-history hook, or automatic rename.
+  // No worker, network request, or injected page-history hook.
   if(typeof document.createElement==='function'){
     const host=document.createElement('div');
     host.id='session-deck-namer';
@@ -261,7 +326,9 @@
     setup.append(workSelect);
     const register=document.createElement('button');register.textContent='この作業を会話に登録';setup.append(register);
     const unbind=document.createElement('button');unbind.textContent='この会話との対応を解除';
-    panel.append(label,text,button,setup,unbind,message);root.append(style,panel);document.documentElement.append(host);
+    const autoInfo=document.createElement('p'), autoOn=document.createElement('button'), autoOff=document.createElement('button');
+    autoOn.textContent='この会話・候補だけ自動改名ON';autoOff.textContent='自動改名OFF';
+    panel.append(label,text,button,setup,unbind,autoInfo,autoOn,autoOff,message);root.append(style,panel);document.documentElement.append(host);
     let snapshot=null, signature='', refreshing=false, operating=false, notice='';
     let worksSignature='';
     async function refresh(){
@@ -269,7 +336,7 @@
       refreshing=true;
       try{
         const next=await status();
-        const key=JSON.stringify([next.id,next.currentTitle,next.candidate,next.blocked]);
+        const key=JSON.stringify([next.id,next.currentTitle,next.candidate,next.blocked,next.auto?.state,next.auto?.grantId]);
         if(signature!==key){signature=key;notice='';}
         snapshot=next;
         host.hidden=!next.id;
@@ -281,6 +348,14 @@
         }
         text.textContent=next.candidate||'作業情報を確認してください。';
         button.disabled=Boolean(next.blocked)||next.currentTitle===next.candidate;
+        const state=next.auto?.state, here=next.auto?.id===next.id;
+        autoInfo.textContent=!next.autoAvailable?'自動改名は利用できません（タブ間排他が必要）。':
+          state==='running'?'自動改名：実行中または前回未確認。中断時はOFFにして画面を確認してください。':
+          state==='enabled'?(here?'自動改名ON：この会話・表示候補のみ。候補と同名なら変更しません。':'自動改名ON：別の登録会話が対象です。'):
+          state==='completed'?'自動改名完了：1回の変更を確認しました。':
+          state==='stopped'?'自動改名OFF：停止済み。編集画面が残る場合はキャンセルしてください。':'自動改名OFF（初期状態）。';
+        autoOn.disabled=!next.autoAvailable||Boolean(next.blocked)||state==='running'||(state==='enabled'&&here);
+        autoOff.disabled=!['enabled','running'].includes(state);
         message.textContent=notice||next.blocked||(next.currentTitle===next.candidate?'現在の表示名は候補と一致しています。':'登録済み作業から生成しました。');
       }catch{host.hidden=true;snapshot=null;}finally{refreshing=false;}
     }
@@ -302,7 +377,7 @@
     unbind.addEventListener('click',async()=>{
       if(!snapshot||operating)return;
       const id=snapshot.id;operating=true;
-      try{if(currentId()===id)await chrome.storage.local.remove(BINDING+id);}
+      try{if(currentId()===id){await stopAuto();await chrome.storage.local.remove(BINDING+id);}}
       catch(error){notice=error.message;}
       finally{operating=false;await refresh();}
     });
@@ -315,6 +390,16 @@
         resultNotice='画面で変更を確認しました。再読み込み後の保持は別途確認してください。';
       }catch(error){resultNotice=error.message;}
       finally{operating=false;await refresh();notice=resultNotice;message.textContent=notice;}
+    });
+    autoOn.addEventListener('click',async()=>{
+      if(!snapshot||operating)return;
+      const selected=snapshot;operating=true;
+      try{await enableAuto({expectedId:selected.id,expectedTitle:selected.currentTitle,title:selected.candidate});}
+      catch(error){notice=error.message;message.textContent=notice;}
+      finally{operating=false;await refresh();}
+    });
+    autoOff.addEventListener('click',async()=>{
+      try{await stopAuto();await refresh();}catch(error){notice=error.message;message.textContent=notice;}
     });
     window.addEventListener('popstate',()=>void refresh());
     window.addEventListener('pageshow',()=>void refresh());

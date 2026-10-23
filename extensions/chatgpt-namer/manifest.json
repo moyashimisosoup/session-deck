@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Session Deck Namer",
-  "version": "0.4.1",
-  "description": "Explicit, one-conversation-at-a-time ChatGPT Web rename helper with UI readback and safe fallback.",
+  "version": "0.5.0",
+  "description": "One-conversation ChatGPT rename helper with explicit automatic grant, UI readback and manual-name protection.",
   "permissions": [
     "storage",
     "activeTab"

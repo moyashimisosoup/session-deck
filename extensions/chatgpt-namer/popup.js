@@ -10,6 +10,7 @@
     $('bind').disabled=!(ready&&$('work').value&&!snapshot.binding&&naming.dateValid($('date').value));
     $('register').disabled=!(ready&&!snapshot.binding&&naming.generate({workId:$('workId').value,group:$('group').value,detail:$('detail').value,date:$('date').value}));
     $('unbind').disabled=!(ready&&snapshot.binding);
+    $('autoStop').disabled=!(activeTab&&snapshot&&!operating&&['enabled','running'].includes(snapshot.auto?.state));
   }
   async function send(type,extra={}){
     if(!activeTab)return {ok:false,error:'ChatGPT Webの会話を開いてください。'};
@@ -23,6 +24,7 @@
     $('session').textContent=result.id?'会話ID: '+result.id+'\n表示名: '+(result.currentTitle||'取得できません（サイドバーを開いてください）'):'まだ会話IDがありません。会話を保存してから再度開いてください。';
     $('candidate').textContent=result.candidate||'作業を選択・登録すると正式名を生成します。';
     $('protection').textContent=result.blocked||'登録済み作業に基づく候補です。';
+    $('autoStatus').textContent='自動改名：'+({enabled:'ON（明示した1会話・1候補のみ）',running:'実行中または前回未確認。中断時はOFFにして画面を確認してください。',completed:'完了（自動再試行なし）',stopped:'OFF（停止済み）'}[result.auto?.state]||'OFF');
     const selected=result.binding?.workId||$('work').value;
     $('work').replaceChildren(new Option('作業を選択してください',''));
     for(const work of result.works)$('work').append(new Option(work.workId+' — '+work.group,work.workId));
@@ -59,6 +61,7 @@
   });
   $('register').addEventListener('click',()=>void operate('BIND_WORK',{work:{workId:$('workId').value.trim(),group:$('group').value.trim(),detail:$('detail').value.trim()},date:$('date').value.trim()}));
   $('unbind').addEventListener('click',()=>void operate('UNBIND_WORK'));
+  $('autoStop').addEventListener('click',()=>void operate('STOP_AUTO'));
   $('confirm').addEventListener('click',()=>void operate('CONFIRM_CANDIDATE',{title:snapshot?.candidate},true));
   $('rename').addEventListener('click',()=>void operate('RENAME',{title:$('desired').value.trim()},true));
   $('export').addEventListener('click',async()=>{

@@ -18,7 +18,7 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 </style></head>
 <body>
 <h1>Session Deck Namer</h1>
-<p class="tip">開いているChatGPT Webの会話を、明示操作で1件だけ変更します。</p>
+<p class="tip">開いているChatGPT Webの会話を1件だけ変更します。自動改名はページ内パネルで明示的にONにします。</p>
 <div class="card"><strong>現在の会話</strong><div id="session">確認中…</div></div>
 <a class="link" href="https://moyashimisosoup.github.io/session-deck/naming.html" target="_blank" rel="noopener noreferrer">命名コンソールを開く ↗</a>
 <div class="card">
@@ -36,6 +36,7 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 <label for="candidate">登録済み作業からの候補</label><p id="candidate"></p>
 <p id="protection" role="status"></p>
 <button id="confirm" class="primary" disabled>確認してこの会話を改名</button>
+<p id="autoStatus" role="status"></p><button id="autoStop" disabled>自動改名OFF</button>
 <details><summary>正式名称を手入力する</summary>
 <label for="desired">正式名称</label>
 <textarea id="desired" spellcheck="false" placeholder="【作業名】1017・SD-012・具体的内容"></textarea>
@@ -47,6 +48,6 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 <button id="export">保存データをファイルに保存</button>
 <label for="import">保存データを読み込む</label><input id="import" type="file" accept="application/json,.json">
 <p id="backupResult" role="status"></p></details>
-<p class="note">自動・一括変更はしません。ChatGPT画面から変更成功を確認できない場合は「未確認」と表示します。ログイン情報・会話本文・認証情報は取得しません。</p>
+<p class="note">自動改名は1会話・1候補に限定します。失敗や中断後は自動再試行しません。自動改名の許可は保存ファイルに含みません。ログイン情報・会話本文・認証情報は取得しません。</p>
 <script src="naming-core.js"></script><script src="backup.js"></script><script src="popup.js"></script>
 </body></html>

@@ -50,9 +50,10 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
   assert.equal(element('openChat').disabled,false);
 });
 
-function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット'}={}){
+function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット', locks=makeLocks(), focused=true, saveFailure=false, onSet=null}={}){
   const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
-  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener;
+  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0;
+  const intervals=[];
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>row};
   const row={querySelectorAll:s=>s==='a[href*="/c/"]'?(mixedRow?[anchor,{href:'https://chatgpt.com/c/other-chat'}]:[anchor]):[menuButton]};
@@ -63,7 +64,7 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
   const menuItems=ambiguous?[renameItem,{...renameItem}]:noRename?[]:[renameItem];
   const menu={id:'test-menu',getAttribute:()=>foreignMenu?'unrelated-trigger':'test-trigger',
     getClientRects:()=>[{}],querySelectorAll:()=>menuItems};
-  const save=()=>{title=input.value;anchor.innerText=title;};
+  const save=()=>{saves++;if(saveFailure)throw Error('synthetic save failure');title=input.value;anchor.innerText=title;editing=false;menuOpen=false;};
   const dialog={getClientRects:()=>[{}],querySelectorAll:s=>{
     if(s==='input')return dialogInputs;
     if(s==='input[type="text"]')return dialogInputs.filter(i=>i.typeAttribute==='text');
@@ -78,6 +79,7 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     }};
   const dialogInputs=(dialogInputTypes||[]).map((type,index)=>index===0?Object.assign(input,{typeAttribute:type,type:type||'text'}):{...input,typeAttribute:type,type:type||'text'});
   const document={
+    visibilityState:'visible',hasFocus:()=>focused,
     querySelectorAll:s=>{
       if(s==='a[href*="/c/"]')return [anchor];
       if(s==='[role="menu"]')return menuOpen?[menu]:[];
@@ -89,17 +91,28 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     querySelector:s=>null
   };
   const chrome={runtime:{onMessage:{addListener(fn){listener=fn;}}},
-    storage:{local:{get:async k=>k===null?{...store}:{[k]:store[k]},set:async items=>Object.assign(store,items),remove:async k=>{delete store[k];}}}};
+    storage:{local:{get:async k=>k===null?{...store}:{[k]:store[k]},set:async items=>{await onSet?.(items);Object.assign(store,items);},remove:async k=>{delete store[k];}}}};
   const loc={href:'https://chatgpt.com/c/'+id};
   const vm={document,chrome,location:loc,URL,CSS:{escape:x=>x},HTMLElement:class {},HTMLInputElement:class {},
     InputEvent:class{constructor(type,props){this.type=type;this.props=props}},
     Event:class{constructor(type){this.type=type}},
-    KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console};
+    KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console,
+    navigator:{locks},crypto:{randomUUID:()=>globalThis.crypto.randomUUID()},setInterval:fn=>intervals.push(fn)};
   runInNewContext(core+'\n'+content,vm);
   const send=message=>new Promise(resolve=>listener({expectedTitle:title,...message},null,resolve));
   // A foreign menu has neither ownership relation, even when its label matches.
   if(foreignMenu){menu.id='unrelated-menu';menuButton.getAttribute=()=>null;}
-  return {send,id,store,getTitle:()=>title,setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
+  return {send,id,store,getTitle:()=>title,getSaves:()=>saves,async tick(){await intervals[0]();},
+    focus(value){focused=value;},hide(value){document.visibilityState=value?'hidden':'visible';},
+    setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
+}
+
+function makeLocks(){
+  let held=false;
+  return {async request(_name,_options,fn){
+    if(held)return fn(null);
+    held=true;try{return await fn({});}finally{held=false;}
+  }};
 }
 test('ChatGPT extension only changes active ID and verifies UI title',async()=>{
   const sim=simulateChatGPT();
@@ -373,4 +386,119 @@ test('Local import rejects incompatible storage container types before applying 
   const valid={sessionDeckNamerRecords:{}, 'sessionDeckNamerWork:FIXTURE-001':{},
     'sessionDeckNamerBinding:fixture-chat':{}, 'sessionDeckNamerHistory:fixture-chat':[]};
   assert.equal(JSON.stringify(backup.decode(backup.encode(valid))),JSON.stringify(valid));
+});
+
+const autoKey='sessionDeckNamerAuto';
+async function enable(sim){
+  const s=await sim.send({type:'GET_STATUS'});
+  return sim.send({type:'ENABLE_AUTO',expectedId:sim.id,title:s.candidate});
+}
+
+test('Automatic mode defaults OFF; explicit grant saves once and never retries on reload',async()=>{
+  const sim=simulateChatGPT();await bind(sim);
+  await sim.tick();assert.equal(sim.getSaves(),0);
+  assert.equal((await enable(sim)).auto.state,'enabled');
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'completed');
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  const reload=simulateChatGPT({store:sim.store,initialTitle:sim.getTitle()});
+  await reload.tick();assert.equal(reload.getSaves(),0);
+});
+
+test('Automatic grant for an already matching name stays ON without duplicate history or saves',async()=>{
+  const sim=simulateChatGPT();const s=await bind(sim);
+  await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:s.candidate});
+  assert.equal((await enable(sim)).auto.state,'enabled');
+  await sim.tick();await sim.tick();assert.equal(sim.getSaves(),1);
+  assert.equal(sim.store['sessionDeckNamerHistory:'+sim.id].length,1);
+  const reload=simulateChatGPT({store:sim.store,initialTitle:sim.getTitle()});
+  await reload.tick();assert.equal(reload.getSaves(),0);
+  assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'enabled');
+});
+
+test('Automatic mode protects manual edits and rejects changed candidates',async()=>{
+  for(const change of ['manual','candidate']){
+    const sim=simulateChatGPT();await bind(sim);await enable(sim);
+    if(change==='manual')sim.setTitle('人が選んだ表示名');
+    else sim.store['sessionDeckNamerWork:TEST-001'].detail='承認していない別候補';
+    await sim.tick();assert.equal(sim.getSaves(),0);
+    assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped');
+  }
+});
+
+test('Automatic mode waits for the active visible target and ignores another conversation',async()=>{
+  const sim=simulateChatGPT();await bind(sim);await enable(sim);
+  sim.focus(false);await sim.tick();assert.equal(sim.getSaves(),0);
+  sim.focus(true);sim.hide(true);await sim.tick();assert.equal(sim.getSaves(),0);
+  sim.hide(false);sim.navigate('/c/another-fixture');await sim.tick();assert.equal(sim.getSaves(),0);
+  sim.navigate('/c/'+sim.id);await sim.tick();assert.equal(sim.getSaves(),1);
+});
+
+test('Automatic grant requires locks and refuses an existing editor; unbinding revokes it',async()=>{
+  const noLock=simulateChatGPT({locks:null});await bind(noLock);
+  assert.equal((await enable(noLock)).ok,false);await noLock.tick();assert.equal(noLock.getSaves(),0);
+  const edit=simulateChatGPT({dialogInputTypes:[null]});await bind(edit);
+  assert.equal((await enable(edit)).ok,false);
+  const sim=simulateChatGPT();await bind(sim);await enable(sim);
+  await sim.send({type:'UNBIND_WORK',expectedId:sim.id});await sim.tick();assert.equal(sim.getSaves(),0);
+  assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped');
+});
+
+test('A failed or interrupted automatic attempt never resumes itself',async()=>{
+  const sim=simulateChatGPT({saveFailure:true});await bind(sim);await enable(sim);
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped');
+  sim.store[autoKey]={...sim.store[autoKey],grantId:'interrupted-fixture',state:'running'};
+  const reload=simulateChatGPT({store:sim.store});await reload.tick();assert.equal(reload.getSaves(),0);
+  assert.equal((await enable(reload)).ok,false);
+  await reload.send({type:'STOP_AUTO'});
+  assert.equal((await enable(reload)).ok,true);
+});
+
+test('Revocation, navigation, loss of focus or binding removal during menu opening prevents automatic save',async()=>{
+  for(const change of ['revoke','navigate','blur','unbind']){
+    let sim;
+    sim=simulateChatGPT({onMenu:loc=>{
+      if(change==='revoke')sim.store.sessionDeckNamerAutoRevoked=sim.store[autoKey].grantId;
+      if(change==='navigate')loc.href='https://chatgpt.com/c/another-fixture';
+      if(change==='blur')sim.focus(false);
+      if(change==='unbind')delete sim.store['sessionDeckNamerBinding:'+sim.id];
+    }});
+    await bind(sim);await enable(sim);await sim.tick();
+    assert.equal(sim.getSaves(),0,change);
+    assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped',change);
+  }
+});
+
+test('Shared tab lock permits only one automatic save and serializes manual operations',async()=>{
+  const store={},locks=makeLocks(),a=simulateChatGPT({store,locks}),b=simulateChatGPT({store,locks});
+  await bind(a);await enable(a);
+  await Promise.all([a.tick(),b.tick()]);
+  assert.equal(a.getSaves()+b.getSaves(),1);
+  assert.equal(store['sessionDeckNamerHistory:'+a.id].length,1);
+  const c=simulateChatGPT({locks});const s=await bind(c);
+  await locks.request('session-deck-namer-write',{},async()=>{
+    assert.equal((await c.send({type:'CONFIRM_CANDIDATE',expectedId:c.id,title:s.candidate})).ok,false);
+  });
+  assert.equal(c.getSaves(),0);
+});
+
+test('Backup export excludes automatic grants and import cannot revive them',()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const data=vm.SessionDeckBackup.decode(vm.SessionDeckBackup.encode({[autoKey]:{state:'enabled'},sessionDeckNamerAutoRevoked:'token',sessionDeckNamerRecords:{}}));
+  assert.equal(autoKey in data,false);
+  assert.equal('sessionDeckNamerAutoRevoked' in data,false);
+  assert.throws(()=>vm.SessionDeckBackup.decode(JSON.stringify({app:'Session Deck Namer',data:{[autoKey]:{state:'enabled'}}})));
+});
+
+test('OFF survives a concurrent state write and never permits a save',async()=>{
+  let sim;
+  sim=simulateChatGPT({onSet:async items=>{
+    if(items[autoKey]?.state==='running')await sim.send({type:'STOP_AUTO'});
+  }});
+  await bind(sim);await enable(sim);await sim.tick();
+  assert.equal(sim.getSaves(),0);
+  assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped');
+  await sim.tick();assert.equal(sim.getSaves(),0);
 });
