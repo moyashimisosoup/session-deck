@@ -10,7 +10,9 @@
     $('bind').disabled=!(ready&&$('work').value&&!snapshot.binding&&naming.dateValid($('date').value));
     $('register').disabled=!(ready&&!snapshot.binding&&naming.generate({workId:$('workId').value,group:$('group').value,detail:$('detail').value,date:$('date').value}));
     $('unbind').disabled=!(ready&&snapshot.binding);
-    $('autoStop').disabled=!(activeTab&&snapshot&&!operating&&['enabled','running'].includes(snapshot.auto?.state));
+    $('autoStop').disabled=!(activeTab&&snapshot&&!operating&&snapshot.auto?.id===snapshot.id&&['enabled','running'].includes(snapshot.auto?.state));
+    $('workAutoOn').disabled=!(ready&&snapshot.binding&&!snapshot.blocked&&snapshot.autoAvailable&&!snapshot.policy);
+    $('workAutoOff').disabled=!(ready&&snapshot.policy);
   }
   async function send(type,extra={}){
     if(!activeTab)return {ok:false,error:'ChatGPT Webの会話を開いてください。'};
@@ -25,9 +27,10 @@
     $('candidate').textContent=result.candidate||'作業を選択・登録すると正式名を生成します。';
     $('protection').textContent=result.blocked||'登録済み作業に基づく候補です。';
     $('autoStatus').textContent='自動改名：'+({enabled:'ON（明示した1会話・1候補のみ）',running:'実行中または前回未確認。中断時はOFFにして画面を確認してください。',completed:'完了（自動再試行なし）',stopped:'OFF（停止済み）'}[result.auto?.state]||'OFF');
+    $('workAutoStatus').textContent=result.policy?'この作業の自動命名ON：今後、初めて登録する会話へ適用します。':'作業別の自動命名OFF。既存会話へ一括適用しません。';
     const selected=result.binding?.workId||$('work').value;
     $('work').replaceChildren(new Option('作業を選択してください',''));
-    for(const work of result.works)$('work').append(new Option(work.workId+' — '+work.group,work.workId));
+    for(const work of result.works)$('work').append(new Option(work.workId+' — '+work.group+(result.autoWorkIds.includes(work.workId)?'（自動命名ON）':''),work.workId));
     $('work').value=selected;
     $('work').disabled=Boolean(result.binding);
     $('date').disabled=Boolean(result.binding);
@@ -62,6 +65,8 @@
   $('register').addEventListener('click',()=>void operate('BIND_WORK',{work:{workId:$('workId').value.trim(),group:$('group').value.trim(),detail:$('detail').value.trim()},date:$('date').value.trim()}));
   $('unbind').addEventListener('click',()=>void operate('UNBIND_WORK'));
   $('autoStop').addEventListener('click',()=>void operate('STOP_AUTO'));
+  $('workAutoOn').addEventListener('click',()=>void operate('ENABLE_WORK_AUTO',{workId:snapshot?.binding?.workId,title:snapshot?.candidate}));
+  $('workAutoOff').addEventListener('click',()=>void operate('STOP_WORK_AUTO',{workId:snapshot?.binding?.workId}));
   $('confirm').addEventListener('click',()=>void operate('CONFIRM_CANDIDATE',{title:snapshot?.candidate},true));
   $('rename').addEventListener('click',()=>void operate('RENAME',{title:$('desired').value.trim()},true));
   $('export').addEventListener('click',async()=>{
