@@ -359,3 +359,16 @@ test('Local import refuses unrelated or dangerous files',()=>{
   assert.throws(()=>backup.decode('{"app":"Session Deck Namer","data":{"unknown":{}}}'));
   assert.throws(()=>backup.decode('{"app":"Session Deck Namer","data":{"sessionDeckNamerRecords":{"__proto__":{}}}}'));
 });
+
+test('Local import rejects incompatible storage container types before applying data',()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const backup=vm.SessionDeckBackup;
+  const invalid={sessionDeckNamerRecords:[], 'sessionDeckNamerWork:FIXTURE-001':[],
+    'sessionDeckNamerBinding:fixture-chat':[], 'sessionDeckNamerHistory:fixture-chat':{}};
+  for(const [key,value] of Object.entries(invalid)){
+    assert.throws(()=>backup.decode(JSON.stringify({app:'Session Deck Namer',data:{[key]:value}})),/項目/);
+  }
+  const valid={sessionDeckNamerRecords:{}, 'sessionDeckNamerWork:FIXTURE-001':{},
+    'sessionDeckNamerBinding:fixture-chat':{}, 'sessionDeckNamerHistory:fixture-chat':[]};
+  assert.equal(JSON.stringify(backup.decode(backup.encode(valid))),JSON.stringify(valid));
+});
