@@ -1,4 +1,4 @@
-/* Session Deck Namer 0.5.0: explicit single-conversation automatic grant. */
+/* Session Deck Namer 0.6.0: opt-in work policy for newly bound conversations. */
 (() => {
   'use strict';
   const naming=globalThis.SessionDeckNaming;
@@ -6,6 +6,8 @@
   const STORAGE='sessionDeckNamerRecords';
   const WORK='sessionDeckNamerWork:', BINDING='sessionDeckNamerBinding:', HISTORY='sessionDeckNamerHistory:';
   const AUTO='sessionDeckNamerAuto', AUTO_STOP='sessionDeckNamerAutoRevoked';
+  const POLICY='sessionDeckNamerWorkAuto:', POLICY_STOP='sessionDeckNamerWorkAutoRevoked:';
+  const GRANT='sessionDeckNamerWorkGrant:', GRANT_STOP='sessionDeckNamerWorkGrantRevoked:';
   let busy=false;
   let checkingAuto=false;
   const locks=globalThis.navigator?.locks;
@@ -171,6 +173,11 @@
       return {status:'ui_verified',title,verification:'ui_observed'};
     }finally{busy=false;}
   }
+  function workPolicy(store,work){
+    const p=work&&store[POLICY+work.workId];
+    return p&&p.policyId&&store[POLICY_STOP+work.workId]!==p.policyId&&
+      p.workId===work.workId&&p.group===work.group&&p.detail===work.detail?p:null;
+  }
   async function status(){
     const id=currentId(), store=await chrome.storage.local.get(null);
     const currentTitle=id?observedName(id):null;
@@ -187,9 +194,15 @@
     else if(!candidate)blocked='作業情報または日付を確認してください。';
     else if(parsed && parsed.workId!==binding.workId)blocked='表示名が別の作業に属するため保護しています。';
     else if(currentTitle!==(record?.title||binding.baselineTitle))blocked='手動変更された名前を保護しています。';
-    const storedAuto=store[AUTO]||null;
-    const auto=storedAuto&&store[AUTO_STOP]===storedAuto.grantId?{...storedAuto,state:'stopped'}:storedAuto;
-    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked,auto,autoAvailable:Boolean(locks?.request)};
+    const policy=workPolicy(store,work);
+    const autoKey=id&&store[GRANT+id]&&store[GRANT+id].state!=='superseded'?GRANT+id:AUTO;
+    const stoppedKey=autoKey===AUTO?AUTO_STOP:GRANT_STOP+id;
+    const storedAuto=store[autoKey]||null;
+    const revoked=storedAuto&&(store[stoppedKey]===storedAuto.grantId||
+      (storedAuto.policyId&&storedAuto.policyId!==policy?.policyId));
+    const auto=revoked?{...storedAuto,state:'stopped'}:storedAuto;
+    const autoWorkIds=works.filter(w=>workPolicy(store,w)).map(w=>w.workId);
+    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked,auto,autoKey,policy,autoWorkIds,autoAvailable:Boolean(locks?.request)};
   }
   function requireId(msg){
     const id=currentId();
@@ -197,6 +210,7 @@
     return id;
   }
   async function bindWork(msg){
+    return exclusive(async()=>{
     const id=requireId(msg), before=await status();
     if(!before.currentTitle||before.currentTitle!==msg.expectedTitle)throw Error('対象の表示名を確認し直してください。');
     const work=msg.work;
@@ -204,14 +218,22 @@
     if(before.binding && before.binding.workId!==work.workId)throw Error('別の作業に登録済みです。先に対応を解除してください。');
     const parsed=naming.parse(before.currentTitle);
     if(parsed && parsed.workId!==work.workId)throw Error('表示名が別の作業に属しています。');
-    const key=WORK+work.workId, stored=await chrome.storage.local.get(key);
+    const key=WORK+work.workId, stored=await chrome.storage.local.get(null);
     const canonical={workId:work.workId,group:work.group,detail:work.detail};
     if(stored[key] && (stored[key].group!==work.group || stored[key].detail!==work.detail))throw Error('登録済み作業と内容が違います。既存の作業を選択してください。');
     if(currentId()!==id||observedName(id)!==before.currentTitle)throw Error('登録中に対象が変わりました。');
     // Re-registering must never silently approve a manual title change.
     const binding=before.binding||{workId:work.workId,date:msg.date,baselineTitle:before.currentTitle};
-    await chrome.storage.local.set({[key]:canonical,[BINDING+id]:binding});
+    const values={[key]:canonical,[BINDING+id]:binding};
+    const policy=workPolicy(stored,canonical);
+    // Only this explicit first binding creates an attempt. Imports, revisits,
+    // re-registration and policy toggles never backfill or revive grants.
+    if(!before.binding&&policy&&!stored[GRANT+id])values[GRANT+id]={
+      grantId:crypto.randomUUID(),policyId:policy.policyId,id,workId:work.workId,
+      title:naming.generate({...canonical,date:binding.date}),baseline:before.currentTitle,state:'enabled'};
+    await chrome.storage.local.set(values);
     return status();
+    });
   }
   async function confirmCandidate(msg){
     const id=requireId(msg), snapshot=await status();
@@ -224,9 +246,32 @@
     return {ok:true,...await exclusive(()=>rename(id,snapshot.candidate,msg.expectedTitle,guard))};
   }
   async function stopAuto(){
-    const grant=(await chrome.storage.local.get(AUTO))[AUTO];
+    const store=await chrome.storage.local.get(null), grant=store[AUTO], id=currentId();
     // Separate revocation survives a simultaneous running/completed state write.
-    if(grant)await chrome.storage.local.set({[AUTO_STOP]:grant.grantId});
+    const values={};
+    if(grant?.id===id)values[AUTO_STOP]=grant.grantId;
+    if(id&&store[GRANT+id])values[GRANT_STOP+id]=store[GRANT+id].grantId;
+    if(Object.keys(values).length)await chrome.storage.local.set(values);
+    return status();
+  }
+  async function enableWorkAuto(msg){
+    return exclusive(async()=>{
+      const id=requireId(msg), s=await status();
+      if(s.blocked)throw Error(s.blocked);
+      if(s.binding.workId!==msg.workId||s.candidate!==msg.title||s.currentTitle!==msg.expectedTitle)
+        throw Error('対象作業と候補を確認し直してください。');
+      if(s.policy)return s;
+      const work=s.works.find(w=>w.workId===msg.workId);
+      if(currentId()!==id||observedName(id)!==s.currentTitle)throw Error('許可中に対象が変わりました。');
+      await chrome.storage.local.set({[POLICY+msg.workId]:{workId:work.workId,group:work.group,detail:work.detail,policyId:crypto.randomUUID()}});
+      return status();
+    });
+  }
+  async function stopWorkAuto(msg){
+    requireId(msg);
+    const s=await status();
+    if(s.binding?.workId!==msg.workId)throw Error('対象作業が変わりました。');
+    if(s.policy)await chrome.storage.local.set({[POLICY_STOP+msg.workId]:s.policy.policyId});
     return status();
   }
   async function enableAuto(msg){
@@ -237,7 +282,10 @@
       if(s.auto?.state==='running')throw Error('前回の処理が未確認です。自動改名をOFFにして画面を確認してください。');
       if(editor()||document.querySelectorAll('[role="menu"]').length)throw Error('開いている編集画面・メニューを閉じてください。');
       if(currentId()!==id||observedName(id)!==s.currentTitle)throw Error('許可中に対象が変わりました。');
-      await chrome.storage.local.set({[AUTO]:{grantId:crypto.randomUUID(),id,workId:s.binding.workId,title:s.candidate,baseline:s.currentTitle,state:'enabled'}});
+      const values={[AUTO]:{grantId:crypto.randomUUID(),id,workId:s.binding.workId,title:s.candidate,baseline:s.currentTitle,state:'enabled'}};
+      const prior=(await chrome.storage.local.get(GRANT+id))[GRANT+id];
+      if(prior)values[GRANT+id]={...prior,state:'superseded'};
+      await chrome.storage.local.set(values);
       return status();
     });
   }
@@ -252,9 +300,9 @@
         // has started: wait without writing UI or revoking an idle grant.
         if(!s.currentTitle)return;
         const update=async(state)=>{
-          const latest=(await chrome.storage.local.get(AUTO))[AUTO];
+          const latest=(await chrome.storage.local.get(s.autoKey))[s.autoKey];
           if(latest?.grantId===grant.grantId&&['enabled','running'].includes(latest.state))
-            await chrome.storage.local.set({[AUTO]:{...latest,state}});
+            await chrome.storage.local.set({[s.autoKey]:{...latest,state}});
         };
         if(s.blocked||s.candidate!==grant.title||s.binding?.workId!==grant.workId||
           (s.currentTitle!==grant.baseline&&s.currentTitle!==grant.title))return update('stopped');
@@ -287,6 +335,8 @@
       if(msg?.type==='CONFIRM_CANDIDATE')return confirmCandidate(msg);
       if(msg?.type==='ENABLE_AUTO')return enableAuto(msg);
       if(msg?.type==='STOP_AUTO')return stopAuto();
+      if(msg?.type==='ENABLE_WORK_AUTO')return enableWorkAuto(msg);
+      if(msg?.type==='STOP_WORK_AUTO')return stopWorkAuto(msg);
       if(msg?.type==='UNBIND_WORK'){
         const id=requireId(msg);
         await stopAuto();
@@ -331,7 +381,9 @@
     const unbind=document.createElement('button');unbind.textContent='この会話との対応を解除';
     const autoInfo=document.createElement('p'), autoOn=document.createElement('button'), autoOff=document.createElement('button');
     autoOn.textContent='この会話・候補だけ自動改名ON';autoOff.textContent='自動改名OFF';
-    panel.append(label,text,button,setup,unbind,autoInfo,autoOn,autoOff,message);root.append(style,panel);document.documentElement.append(host);
+    const policyInfo=document.createElement('p'), policyOn=document.createElement('button'), policyOff=document.createElement('button');
+    policyOn.textContent='この作業の新規会話を自動命名ON';policyOff.textContent='この作業の自動命名OFF';
+    panel.append(label,text,button,setup,unbind,policyInfo,policyOn,policyOff,autoInfo,autoOn,autoOff,message);root.append(style,panel);document.documentElement.append(host);
     let snapshot=null, signature='', refreshing=false, operating=false, notice='';
     let worksSignature='';
     async function refresh(){
@@ -339,18 +391,21 @@
       refreshing=true;
       try{
         const next=await status();
-        const key=JSON.stringify([next.id,next.currentTitle,next.candidate,next.blocked,next.auto?.state,next.auto?.grantId]);
+        const key=JSON.stringify([next.id,next.currentTitle,next.candidate,next.blocked,next.auto?.state,next.auto?.grantId,next.policy?.policyId]);
         if(signature!==key){signature=key;notice='';}
         snapshot=next;
         host.hidden=!next.id;
         setup.hidden=Boolean(next.binding);unbind.hidden=!next.binding;
-        const workKey=JSON.stringify(next.works);
+        const workKey=JSON.stringify([next.works,next.autoWorkIds]);
         if(workKey!==worksSignature){
           worksSignature=workKey;workSelect.replaceChildren(new Option('既存の作業を選択、または上に入力',''));
-          for(const work of next.works)workSelect.append(new Option(work.workId+' — '+work.group,work.workId));
+          for(const work of next.works)workSelect.append(new Option(work.workId+' — '+work.group+(next.autoWorkIds.includes(work.workId)?'（新規会話は自動命名）':''),work.workId));
         }
         text.textContent=next.candidate||'作業情報を確認してください。';
         button.disabled=Boolean(next.blocked)||next.currentTitle===next.candidate;
+        policyInfo.textContent=next.policy?'作業 '+next.binding.workId+' の自動命名ON：今後この作業に初めて登録する会話に適用します。':'作業別の自動命名OFF。既存会話へは一括適用しません。';
+        policyOn.disabled=!next.autoAvailable||Boolean(next.blocked)||Boolean(next.policy);
+        policyOff.disabled=!next.policy;
         const state=next.auto?.state, here=next.auto?.id===next.id;
         autoInfo.textContent=!next.autoAvailable?'自動改名は利用できません（タブ間排他が必要）。':
           state==='running'?'自動改名：実行中または前回未確認。中断時はOFFにして画面を確認してください。':
@@ -358,7 +413,7 @@
           state==='completed'?'自動改名完了：1回の変更を確認しました。':
           state==='stopped'?'自動改名OFF：停止済み。編集画面が残る場合はキャンセルしてください。':'自動改名OFF（初期状態）。';
         autoOn.disabled=!next.autoAvailable||Boolean(next.blocked)||state==='running'||(state==='enabled'&&here);
-        autoOff.disabled=!['enabled','running'].includes(state);
+        autoOff.disabled=!here||!['enabled','running'].includes(state);
         message.textContent=notice||next.blocked||(next.currentTitle===next.candidate?'現在の表示名は候補と一致しています。':'登録済み作業から生成しました。');
       }catch{host.hidden=true;snapshot=null;}finally{refreshing=false;}
     }
@@ -373,7 +428,7 @@
       try{
         const values=Object.fromEntries(Object.entries(fields).map(([key,input])=>[key,input.value.trim()]));
         const registered=await bindWork({expectedId:selected.id,expectedTitle:selected.currentTitle,work:{workId:values.workId,group:values.group,detail:values.detail},date:values.date});
-        resultNotice=registered.blocked||'作業を登録しました。改名には確認ボタンを押してください。';
+        resultNotice=registered.blocked||(registered.auto?.policyId&&registered.auto.state==='enabled'?'作業の許可に従い、この会話の候補を自動で適用します。':'作業を登録しました。改名には確認ボタンを押してください。');
       }catch(error){resultNotice=error.message;}
       finally{operating=false;register.disabled=false;await refresh();notice=resultNotice;message.textContent=notice;}
     });
@@ -404,6 +459,17 @@
     autoOff.addEventListener('click',async()=>{
       try{await stopAuto();await refresh();}catch(error){notice=error.message;message.textContent=notice;}
     });
+    async function changePolicy(enable){
+      if(!snapshot?.binding||operating)return;
+      const s=snapshot;operating=true;
+      try{
+        const msg={expectedId:s.id,expectedTitle:s.currentTitle,workId:s.binding.workId,title:s.candidate};
+        await (enable?enableWorkAuto(msg):stopWorkAuto(msg));
+      }catch(error){notice=error.message;message.textContent=notice;}
+      finally{operating=false;await refresh();}
+    }
+    policyOn.addEventListener('click',()=>void changePolicy(true));
+    policyOff.addEventListener('click',()=>void changePolicy(false));
     window.addEventListener('popstate',()=>void refresh());
     window.addEventListener('pageshow',()=>void refresh());
     chrome.storage.onChanged.addListener(()=>void refresh());

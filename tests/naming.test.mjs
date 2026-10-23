@@ -50,8 +50,8 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
   assert.equal(element('openChat').disabled,false);
 });
 
-function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット', locks=makeLocks(), focused=true, saveFailure=false, onSet=null}={}){
-  const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
+function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット', locks=makeLocks(), focused=true, saveFailure=false, onSet=null, conversationId='aabbccdd-1234-5678-9abc-abcdefabcdef'}={}){
+  const id=conversationId;
   let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0,sidebarReady=true;
   const intervals=[];
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
@@ -516,4 +516,125 @@ test('An idle automatic grant survives delayed sidebar hydration after reload wi
   reload.setTitle('読み込み後に手動変更した名前');await reload.tick();
   assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'stopped');
   assert.equal(reload.getSaves(),0);
+});
+
+async function allowWork(sim,type='ENABLE_WORK_AUTO'){
+  const s=await sim.send({type:'GET_STATUS'});
+  return sim.send({type,expectedId:sim.id,workId:s.binding?.workId,title:s.candidate});
+}
+const workGrant=id=>'sessionDeckNamerWorkGrant:'+id;
+
+test('Work policy applies only to future first bindings and keeps separate one-shot grants for multiple conversations',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);
+  assert.equal((await allowWork(a)).ok,true);await a.tick();assert.equal(a.getSaves(),0);
+  assert.equal(store[workGrant(a.id)],undefined); // No backfill of the authorizing conversation.
+  const policyId=(await a.send({type:'GET_STATUS'})).policy.policyId;
+  assert.equal((await allowWork(a)).policy.policyId,policyId); // Idempotent ON.
+  for(const id of ['work-auto-fixture-0002','work-auto-fixture-0003']){
+    const sim=simulateChatGPT({store,conversationId:id});
+    const registered=await bind(sim);
+    assert.equal(registered.auto.state,'enabled');
+    assert.equal(registered.auto.policyId,policyId);
+    await sim.tick();await sim.tick();assert.equal(sim.getSaves(),1);
+    assert.equal(sim.getTitle(),registered.candidate);
+    assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'completed');
+    assert.equal(store['sessionDeckNamerHistory:'+id].length,1);
+  }
+  assert.equal((await a.send({type:'GET_STATUS'})).policy.policyId,policyId);
+});
+
+test('Revoking and re-enabling work policy cancels old grants without reviving them',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});await bind(b);
+  const oldId=store[workGrant(b.id)].policyId;
+  await allowWork(a,'STOP_WORK_AUTO');await b.tick();assert.equal(b.getSaves(),0);
+  assert.equal((await b.send({type:'GET_STATUS'})).auto.state,'stopped');
+  await allowWork(a);assert.notEqual((await a.send({type:'GET_STATUS'})).policy.policyId,oldId);
+  await b.tick();assert.equal(b.getSaves(),0);
+  assert.equal((await b.send({type:'GET_STATUS'})).auto.state,'stopped');
+});
+
+test('Work grants protect manual titles and never rearm on registration or unbind/rebind',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});await bind(b);
+  const original=store[workGrant(b.id)].grantId;
+  b.setTitle('手動の名前');await b.tick();assert.equal(b.getSaves(),0);
+  await bind(b);assert.equal((await b.send({type:'GET_STATUS'})).auto.state,'stopped');
+  await b.send({type:'UNBIND_WORK',expectedId:b.id});await bind(b);await b.tick();
+  assert.equal(store[workGrant(b.id)].grantId,original);assert.equal(b.getSaves(),0);
+});
+
+test('Policy revocation during an automatic menu stops saving; failures do not disable other future conversations',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002',onMenu:()=>{
+    store['sessionDeckNamerWorkAutoRevoked:TEST-001']=store['sessionDeckNamerWorkAuto:TEST-001'].policyId;
+  }});await bind(b);await b.tick();assert.equal(b.getSaves(),0);
+  await allowWork(a);
+  const failed=simulateChatGPT({store,conversationId:'work-auto-fixture-0003',saveFailure:true});await bind(failed);
+  await failed.tick();await failed.tick();assert.equal(failed.getSaves(),1);
+  const next=simulateChatGPT({store,conversationId:'work-auto-fixture-0004'});await bind(next);await next.tick();
+  assert.equal(next.getSaves(),1);
+});
+
+test('Unapproved or changed work data never obtains an automatic grant',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});
+  await b.send({type:'BIND_WORK',expectedId:b.id,work:{workId:'OTHER-001',group:'別作業',detail:'未許可'},date:'1024'});
+  await b.tick();assert.equal(b.getSaves(),0);assert.equal(store[workGrant(b.id)],undefined);
+  store['sessionDeckNamerWork:TEST-001']={...store['sessionDeckNamerWork:TEST-001'],detail:'別の内容'};
+  const c=simulateChatGPT({store,conversationId:'work-auto-fixture-0003'});
+  await c.send({type:'BIND_WORK',expectedId:c.id,work:store['sessionDeckNamerWork:TEST-001'],date:'1024'});
+  await c.tick();assert.equal(c.getSaves(),0);assert.equal(store[workGrant(c.id)],undefined);
+});
+
+test('Work policy and interrupted attempts survive reload, but no interrupted work grant retries',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});await bind(b);
+  store[workGrant(b.id)].state='running';
+  const reload=simulateChatGPT({store,conversationId:b.id});await reload.tick();assert.equal(reload.getSaves(),0);
+  assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'running');
+  assert.equal((await reload.send({type:'GET_STATUS'})).policy.workId,'TEST-001');
+});
+
+test('Two conversation work grants serialize saves and conversation OFF leaves another grant and work policy enabled',async()=>{
+  const store={},locks=makeLocks(),a=simulateChatGPT({store,locks});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,locks,conversationId:'work-auto-fixture-0002'}),c=simulateChatGPT({store,locks,conversationId:'work-auto-fixture-0003'});
+  await bind(b);await bind(c);
+  await b.send({type:'STOP_AUTO'});await b.tick();assert.equal(b.getSaves(),0);
+  await c.tick();assert.equal(c.getSaves(),1);assert.ok((await a.send({type:'GET_STATUS'})).policy);
+  const d=simulateChatGPT({store,locks,conversationId:'work-auto-fixture-0004'}),e=simulateChatGPT({store,locks,conversationId:'work-auto-fixture-0005'});
+  await bind(d);await bind(e);await Promise.all([d.tick(),e.tick()]);
+  assert.equal(d.getSaves()+e.getSaves(),1);await d.tick();await e.tick();assert.equal(d.getSaves()+e.getSaves(),2);
+});
+
+test('Work policy, grants and revocations never travel in backups or gain authority from imported bindings',async()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const privateKeys={'sessionDeckNamerWorkAuto:TEST-001':{},'sessionDeckNamerWorkAutoRevoked:TEST-001':'id',
+    'sessionDeckNamerWorkGrant:fixture-chat':{},'sessionDeckNamerWorkGrantRevoked:fixture-chat':'id'};
+  const restored=vm.SessionDeckBackup.decode(vm.SessionDeckBackup.encode({...privateKeys,sessionDeckNamerRecords:{}}));
+  for(const key of Object.keys(privateKeys)){
+    assert.equal(key in restored,false);
+    assert.throws(()=>vm.SessionDeckBackup.decode(JSON.stringify({app:'Session Deck Namer',data:{[key]:privateKeys[key]}})));
+  }
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const id='work-auto-fixture-0002';store['sessionDeckNamerBinding:'+id]={workId:'TEST-001',date:'1024',baselineTitle:'旧チャット'};
+  const b=simulateChatGPT({store,conversationId:id});await bind(b);await b.tick();
+  assert.equal(b.getSaves(),0);assert.equal(store[workGrant(id)],undefined);
+});
+
+test('Explicit conversation recovery supersedes a work grant but leaves a tombstone preventing policy rearming',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await allowWork(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});await bind(b);
+  await b.send({type:'STOP_AUTO'});await enable(b);await b.tick();assert.equal(b.getSaves(),1);
+  assert.equal(store[workGrant(b.id)].state,'superseded');
+  await b.send({type:'UNBIND_WORK',expectedId:b.id});await bind(b);await b.tick();
+  assert.equal(store[workGrant(b.id)].state,'superseded');assert.equal(b.getSaves(),1);
+});
+
+test('Unbinding another conversation never revokes the pre-existing explicit automatic grant',async()=>{
+  const store={},a=simulateChatGPT({store});await bind(a);await enable(a);
+  const b=simulateChatGPT({store,conversationId:'work-auto-fixture-0002'});await bind(b);
+  await b.send({type:'UNBIND_WORK',expectedId:b.id});
+  assert.equal((await a.send({type:'GET_STATUS'})).auto.state,'enabled');
+  await a.tick();assert.equal(a.getSaves(),1);
 });
