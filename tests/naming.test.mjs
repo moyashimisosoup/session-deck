@@ -302,7 +302,9 @@ test('Manual changes remain protected after re-registration; removing a mapping 
   const bound=await bind(sim);
   sim.setTitle('手動で変更した名前');
   assert.match((await sim.send({type:'GET_STATUS'})).blocked,/手動変更/);
-  assert.equal((await bind(sim)).ok,true);
+  const registered=await bind(sim);
+  assert.equal(registered.ok,true);
+  assert.match(registered.blocked,/手動変更/);
   assert.match((await sim.send({type:'GET_STATUS'})).blocked,/手動変更/);
   const protectedResult=await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:bound.candidate});
   assert.equal(protectedResult.ok,false);

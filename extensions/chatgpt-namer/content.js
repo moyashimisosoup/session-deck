@@ -294,8 +294,8 @@
       let resultNotice='';
       try{
         const values=Object.fromEntries(Object.entries(fields).map(([key,input])=>[key,input.value.trim()]));
-        await bindWork({expectedId:selected.id,expectedTitle:selected.currentTitle,work:{workId:values.workId,group:values.group,detail:values.detail},date:values.date});
-        resultNotice='作業を登録しました。改名には確認ボタンを押してください。';
+        const registered=await bindWork({expectedId:selected.id,expectedTitle:selected.currentTitle,work:{workId:values.workId,group:values.group,detail:values.detail},date:values.date});
+        resultNotice=registered.blocked||'作業を登録しました。改名には確認ボタンを押してください。';
       }catch(error){resultNotice=error.message;}
       finally{operating=false;register.disabled=false;await refresh();notice=resultNotice;message.textContent=notice;}
     });
