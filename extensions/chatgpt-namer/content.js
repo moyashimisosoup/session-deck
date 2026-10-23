@@ -1,4 +1,4 @@
-/* Session Deck Namer 0.3.0: explicit, scoped, fail-closed ChatGPT Web rename helper. */
+/* Session Deck Namer 0.3.2: explicit, scoped, fail-closed ChatGPT Web rename helper. */
 (() => {
   'use strict';
   const TITLE=/^【[^】\n・]{1,20}】(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01])・[^・\s]{1,30}・[^\r\n]{2,70}$/u;
@@ -27,13 +27,14 @@
   }
   const visible = el => Boolean(el && (typeof el.getClientRects !== 'function' || el.getClientRects().length) && !el.closest?.('[hidden],[aria-hidden="true"]'));
   function menuButton(id){
-    const direct = document.querySelector('[data-conversation-options-trigger="' + CSS.escape(id) + '"]');
-    if(visible(direct) && typeof direct.click==='function') return direct;
     const anchor=findConversationLink(id);
     if(!anchor)return null;
     // Only look near the *exact* active sidebar chat, never in page-level menus.
-    let row=anchor.closest?.('[data-sidebar-chatgpt-conversation-key],[role="listitem"]') || anchor.parentElement?.parentElement;
+    let row=anchor.closest?.('[data-sidebar-cycle-item]') || anchor.closest?.('[data-sidebar-chatgpt-conversation-key],[role="listitem"]') || anchor.parentElement?.parentElement;
     for(let depth=0;row&&depth<4;row=row.parentElement,depth++){
+      // Check ownership BEFORE considering any button in this container.
+      const chatLinks=[...row.querySelectorAll('a[href*="/c/"]')];
+      if(chatLinks.length!==1 || currentId(chatLinks[0].href)!==id)return null;
       const selectors='button[aria-haspopup="menu"],button[data-testid="conversation-options-button"],button[data-testid^="history-item-"][data-testid$="-options"],button[aria-label^="Open conversation options"],button[aria-label*="チャットのオプション"],button[aria-label*="会話のオプション"]';
       const candidates=typeof row.querySelectorAll==='function'
         ? [...row.querySelectorAll(selectors)].filter(visible)
@@ -41,8 +42,6 @@
       if(candidates.length===1)return candidates[0];
       if(candidates.length>1)return null;
       // Do not climb into a container holding unrelated chats.
-      const chatLinks=row.querySelectorAll?.('a[href*="/c/"]');
-      if(chatLinks?.length>1)break;
     }
     return null;
   }
@@ -59,8 +58,16 @@
       return LABELS.has(s) || /^(?:名前|会話名|チャット名|タイトル|会話の名前|チャットの名前)(?:の)?を(?:変更|編集)(?:する)?$/u.test(s);
     });
   }
-  function menuRenameItem(){
-    const items=[...document.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[data-radix-collection-item],button[data-testid*="rename"]')];
+  function openedMenu(button){
+    const controlled=button.getAttribute('aria-controls');
+    const menus=[...document.querySelectorAll('[role="menu"]')].filter(visible).filter(menu=>
+      (controlled && menu.id===controlled) || (button.id && menu.getAttribute('aria-labelledby')===button.id));
+    return menus.length===1?menus[0]:null;
+  }
+  function menuRenameItem(button){
+    const menu=openedMenu(button);
+    if(!menu)return null;
+    const items=[...menu.querySelectorAll('[role="menuitem"]')];
     const matches=[...new Set(items)].filter(visible).filter(isRenameLabel);
     return matches.length===1?matches[0]:null;
   }
@@ -74,7 +81,8 @@
     if(found.length===1)return found[0];
     const dialogs=[...document.querySelectorAll('[role="dialog"]')].filter(x=>x.getClientRects().length);
     if(dialogs.length!==1)return null;
-    const inputs=[...dialogs[0].querySelectorAll('input[type="text"]')];
+    // The live popup omits type; the DOM property still defaults to "text".
+    const inputs=[...dialogs[0].querySelectorAll('input')].filter(input=>input.type==='text');
     return inputs.length===1?inputs[0]:null;
   }
   function setReactValue(input,title){
@@ -103,6 +111,7 @@
     if(!TITLE.test(title))throw Error('命名規則に一致しません。');
     if(currentId()!==id)throw Error('対象会話が切り替わりました。');
     const previous=observedName(id);
+    if(!previous)throw Error('対象会話の表示名を一意に確認できません。');
     if(previous===title)return {status:'already',title,verification:'ui_observed'};
     busy=true;
     try{
@@ -111,10 +120,14 @@
       if(!input){
         const button=await waitUntil(()=>menuButton(id),2500);
         if(!button)throw Error('会話のメニューが特定できません。サイドバーを開いて再試行してください。');
-        button.click();
+        if(currentId()!==id || observedName(id)!==previous)throw Error('メニュー起動前に対象が変わりました。');
+        // The observed trigger is a Radix menu button. Keyboard activation opens
+        // its menu; HTMLElement.click() alone need not fire its pointer handler.
+        button.focus();
+        button.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',code:'ArrowDown',bubbles:true,cancelable:true}));
         input=await waitUntil(editor,250);
         if(!input){
-          const renameItem=await waitUntil(menuRenameItem,2700);
+          const renameItem=await waitUntil(()=>menuRenameItem(button),2700);
           if(!renameItem){
             const stats=menuDiagnostics();
             throw Error('改名メニューが特定できません（可視項目 '+stats.visibleOptions+' 件／改名候補 '+stats.renameCandidates+' 件）。');
@@ -126,6 +139,7 @@
       }
       if(!input)throw Error('会話名の入力欄が見つかりません。');
       if(currentId()!==id)throw Error('対象会話が切り替わったため中止しました。');
+      if(clean(input.value)!==previous || observedName(id)!==previous)throw Error('入力欄と対象会話の名前が一致しないため中止しました。');
       input.focus();
       setReactValue(input,title);
       if(!saveEditor(input))throw Error('保存操作の対象が特定できません。手動で確定してください。');
@@ -157,3 +171,4 @@
     return true;
   });
 })();
+

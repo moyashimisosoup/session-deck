@@ -49,26 +49,40 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
   assert.equal(element('openChat').disabled,false);
 });
 
-function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false}={}){
+function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null}={}){
   const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
-  let title='旧チャット',menuOpen=false,editing=false,listener;
+  let title='旧チャット',menuOpen=false,editing=dialogInputTypes!==null,listener;
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
-    getAttribute:()=>null,closest:()=>({querySelector:()=>menuButton})};
-  const menuButton={click(){menuOpen=true}};
+    getAttribute:()=>null,closest:()=>row};
+  const row={querySelectorAll:s=>s==='a[href*="/c/"]'?(mixedRow?[anchor,{href:'https://chatgpt.com/c/other-chat'}]:[anchor]):[menuButton]};
+  const menuButton={id:'test-trigger',focus(){},getAttribute:key=>key==='aria-controls'&&menuOpen?'test-menu':null,
+    click(){throw Error('click alone must not be used for menu activation');},
+    dispatchEvent(e){if(e.type==='keydown'&&e.key==='ArrowDown'){menuOpen=true;onMenu?.(loc,anchor);}}};
   const renameItem={textContent:menuLabel,innerText:menuLabel,getAttribute:()=>null,getClientRects:()=>[{}],click(){editing=true}};
   const menuItems=ambiguous?[renameItem,{...renameItem}]:noRename?[]:[renameItem];
-  const input={value:'',focus(){},matches:s=>s.includes('input[aria-label="Chat title"]'),
+  const menu={id:'test-menu',getAttribute:()=>foreignMenu?'unrelated-trigger':'test-trigger',
+    getClientRects:()=>[{}],querySelectorAll:()=>menuItems};
+  const save=()=>{title=input.value;anchor.innerText=title;};
+  const dialog={getClientRects:()=>[{}],querySelectorAll:s=>{
+    if(s==='input')return dialogInputs;
+    if(s==='input[type="text"]')return dialogInputs.filter(i=>i.typeAttribute==='text');
+    if(s==='button')return [{textContent:'保存',getClientRects:()=>[{}],click:save}];
+    return [];
+  }};
+  const input={value:foreignEditor?'別の会話':title,type:'text',getClientRects:()=>[{}],focus(){},matches:s=>s.includes('input[aria-label="Chat title"]'),
     parentElement:{parentElement:{querySelectorAll:()=>[]}},
-    closest:s=>s==='form'?(inline?null:{requestSubmit(){title=input.value;anchor.innerText=title;}}):null,
+    closest:s=>s==='form'?(inline||dialogInputTypes!==null?null:{requestSubmit:save}):s==='[role="dialog"]'&&dialogInputTypes!==null?dialog:null,
     dispatchEvent(event){
       if(inline&&event.type==='keydown'&&event.key==='Enter'){title=this.value;anchor.innerText=title;}
     }};
+  const dialogInputs=(dialogInputTypes||[]).map((type,index)=>index===0?Object.assign(input,{typeAttribute:type,type:type||'text'}):{...input,typeAttribute:type,type:type||'text'});
   const document={
     querySelectorAll:s=>{
       if(s==='a[href*="/c/"]')return [anchor];
+      if(s==='[role="menu"]')return menuOpen?[menu]:[];
       if(s.startsWith('[role="menuitem"],'))return menuOpen?menuItems:[];
-      if(s.startsWith('input[name="title-editor"]'))return editing?[input]:[];
-      if(s==='[role="dialog"]')return [];
+      if(s.startsWith('input[name="title-editor"]'))return editing&&dialogInputTypes===null?[input]:[];
+      if(s==='[role="dialog"]')return editing&&dialogInputTypes!==null?[dialog]:[];
       return [];
     },
     querySelector:s=>null
@@ -83,6 +97,8 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console};
   runInNewContext(content,vm);
   const send=message=>new Promise(resolve=>listener(message,null,resolve));
+  // A foreign menu has neither ownership relation, even when its label matches.
+  if(foreignMenu){menu.id='unrelated-menu';menuButton.getAttribute=()=>null;}
   return {send,id,getTitle:()=>title};
 }
 test('ChatGPT extension only changes active ID and verifies UI title',async()=>{
@@ -133,5 +149,49 @@ test('ChatGPT extension reports missing menu without reading conversation body',
   const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【命名テスト】1019・TEST-001・メニューが不明'});
   assert.equal(result.ok,false);
   assert.match(result.error,/可視項目 0 件/);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT popup accepts a text input with its type attribute omitted',async()=>{
+  const sim=simulateChatGPT({dialogInputTypes:[null]});
+  const title='【命名テスト】1022・TEST-001・単一会話の改名確認';
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title});
+  assert.equal(result.ok,true);
+  assert.equal(result.status,'ui_verified');
+  assert.equal(sim.getTitle(),title);
+});
+
+test('ChatGPT popup refuses two text inputs including an implicit text input',async()=>{
+  const sim=simulateChatGPT({dialogInputTypes:['text',null]});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【命名テスト】1022・TEST-001・入力候補が重複'});
+  assert.equal(result.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT refuses a container containing another conversation before selecting its only button',async()=>{
+  const sim=simulateChatGPT({mixedRow:true});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【テスト】1022・TEST-001・対象の照合'});
+  assert.equal(result.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT refuses an unrelated menu with a valid rename label',async()=>{
+  const sim=simulateChatGPT({foreignMenu:true});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【テスト】1022・TEST-001・メニューの照合'});
+  assert.equal(result.ok,false);
+  assert.equal(sim.getTitle(),'旧チャット');
+});
+
+test('ChatGPT refuses an already open editor for a different title',async()=>{
+  const sim=simulateChatGPT({dialogInputTypes:[null],foreignEditor:true});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【テスト】1022・TEST-001・入力欄の照合'});
+  assert.equal(result.ok,false);
+  assert.match(result.error,/入力欄と対象会話/);
+});
+
+test('ChatGPT stops if navigation happens while the menu opens',async()=>{
+  const sim=simulateChatGPT({onMenu:loc=>{loc.href='https://chatgpt.com/c/other-chat';}});
+  const result=await sim.send({type:'RENAME',expectedId:sim.id,title:'【テスト】1022・TEST-001・切替時の停止'});
+  assert.equal(result.ok,false);
   assert.equal(sim.getTitle(),'旧チャット');
 });
