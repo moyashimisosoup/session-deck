@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "library": "shared-design-library",
+  "referenceId": "COL-0001",
+  "title": "AI配色の名前100選",
+  "category": "color-palettes",
+  "registeredAtJst": "2026-10-24",
+  "publishedAt": "2026-10-16T12:02:24Z",
+  "author": "CodeX実践塾 (@Codex_jisen)",
+  "sourceUrl": "https://x.com/Codex_jisen/status/2111065217006473664",
+  "claimedPaletteCount": 100,
+  "claimedColorsPerPalette": 5,
+  "sheetCount": 4,
+  "images": [
+    {
+      "sheet": 1,
+      "externalUrl": "https://pbs.twimg.com/media/HUwCnusawAAbBzH?format=webp&name=large",
+      "xPhotoUrl": "https://x.com/Codex_jisen/status/2111065217006473664/photo/1",
+      "binaryStoredInRepository": false,
+      "verifiedImageContent": false
+    },
+    {
+      "sheet": 2,
+      "externalUrl": "https://pbs.twimg.com/media/HUwCnufaIAAOcRs?format=webp&name=large",
+      "xPhotoUrl": "https://x.com/Codex_jisen/status/2111065217006473664/photo/2",
+      "binaryStoredInRepository": false,
+      "verifiedImageContent": false
+    },
+    {
+      "sheet": 3,
+      "externalUrl": "https://pbs.twimg.com/media/HUwCnu2aYAAKAVz?format=webp&name=large",
+      "xPhotoUrl": "https://x.com/Codex_jisen/status/2111065217006473664/photo/3",
+      "binaryStoredInRepository": false,
+      "verifiedImageContent": false
+    },
+    {
+      "sheet": 4,
+      "externalUrl": "https://pbs.twimg.com/media/HUwCnuqa0AAHRjE?format=webp&name=large",
+      "xPhotoUrl": "https://x.com/Codex_jisen/status/2111065217006473664/photo/4",
+      "binaryStoredInRepository": false,
+      "verifiedImageContent": false
+    }
+  ],
+  "examplesFromPost": [
+    {
+      "name": "桜ミルク",
+      "mood": "やさしく可愛く"
+    },
+    {
+      "name": "氷河ブルー",
+      "mood": "すっきり爽やか"
+    },
+    {
+      "name": "レトロ喫茶",
+      "mood": "落ち着いた雰囲気"
+    }
+  ],
+  "paletteCodeExtraction": "not_performed",
+  "status": "reference_link_saved",
+  "usage": "reference_only",
+  "rightsStatus": "unverified",
+  "redistributionAllowed": false,
+  "notes": "4 public image links retained; 100 palette names and HEX codes have not been individually verified."
+}
