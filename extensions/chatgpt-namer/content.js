@@ -248,6 +248,9 @@
       await exclusive(async()=>{
         const s=await status(), grant=s.auto;
         if(!grant||grant.state!=='enabled'||grant.id!==s.id)return;
+        // Sidebar hydration can lag behind the route after reload. No attempt
+        // has started: wait without writing UI or revoking an idle grant.
+        if(!s.currentTitle)return;
         const update=async(state)=>{
           const latest=(await chrome.storage.local.get(AUTO))[AUTO];
           if(latest?.grantId===grant.grantId&&['enabled','running'].includes(latest.state))

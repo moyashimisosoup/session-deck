@@ -52,7 +52,7 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
 
 function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット', locks=makeLocks(), focused=true, saveFailure=false, onSet=null}={}){
   const id='aabbccdd-1234-5678-9abc-abcdefabcdef';
-  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0;
+  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0,sidebarReady=true;
   const intervals=[];
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>row};
@@ -81,7 +81,7 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
   const document={
     visibilityState:'visible',hasFocus:()=>focused,
     querySelectorAll:s=>{
-      if(s==='a[href*="/c/"]')return [anchor];
+      if(s==='a[href*="/c/"]')return sidebarReady?[anchor]:[];
       if(s==='[role="menu"]')return menuOpen?[menu]:[];
       if(s.startsWith('[role="menuitem"],'))return menuOpen?menuItems:[];
       if(s.startsWith('input[name="title-editor"]'))return editing&&dialogInputTypes===null?[input]:[];
@@ -103,7 +103,7 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
   // A foreign menu has neither ownership relation, even when its label matches.
   if(foreignMenu){menu.id='unrelated-menu';menuButton.getAttribute=()=>null;}
   return {send,id,store,getTitle:()=>title,getSaves:()=>saves,async tick(){await intervals[0]();},
-    focus(value){focused=value;},hide(value){document.visibilityState=value?'hidden':'visible';},
+    focus(value){focused=value;},hide(value){document.visibilityState=value?'hidden':'visible';},sidebar(value){sidebarReady=value;},
     setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
 }
 
@@ -501,4 +501,19 @@ test('OFF survives a concurrent state write and never permits a save',async()=>{
   assert.equal(sim.getSaves(),0);
   assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'stopped');
   await sim.tick();assert.equal(sim.getSaves(),0);
+});
+
+test('An idle automatic grant survives delayed sidebar hydration after reload without saving',async()=>{
+  const sim=simulateChatGPT();const s=await bind(sim);
+  await sim.send({type:'CONFIRM_CANDIDATE',expectedId:sim.id,title:s.candidate});await enable(sim);
+  const reload=simulateChatGPT({store:sim.store,initialTitle:sim.getTitle()});
+  reload.sidebar(false);await reload.tick();await reload.tick();
+  assert.equal(reload.getSaves(),0);
+  assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'enabled');
+  reload.sidebar(true);await reload.tick();
+  assert.equal(reload.getSaves(),0);
+  assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'enabled');
+  reload.setTitle('読み込み後に手動変更した名前');await reload.tick();
+  assert.equal((await reload.send({type:'GET_STATUS'})).auto.state,'stopped');
+  assert.equal(reload.getSaves(),0);
 });
