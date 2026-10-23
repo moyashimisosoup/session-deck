@@ -297,3 +297,25 @@ test('A stale expected title is rejected before changing the page',async()=>{
   assert.equal(result.ok,false);
   assert.equal(sim.getTitle(),'旧チャット');
 });
+
+test('Local export/import preserves opaque old records and merges without overwriting conflicts',()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const backup=vm.SessionDeckBackup;
+  const old={sessionDeckNamerRecords:{'fixture-0001':{title:'過去の記録',verification:'ui_observed'}},unrelated:'not exported'};
+  const restored=backup.decode(backup.encode(old));
+  assert.equal(restored.sessionDeckNamerRecords['fixture-0001'].title,'過去の記録');
+  assert.equal('unrelated' in restored,false);
+  const current={sessionDeckNamerRecords:{'fixture-0002':{title:'別の記録'}}};
+  const merged=backup.merge(current,restored);
+  assert.equal(Object.keys(merged.sessionDeckNamerRecords).length,2);
+  assert.throws(()=>backup.merge({sessionDeckNamerRecords:{'fixture-0001':{title:'変更済み'}}},restored),/競合/);
+  assert.equal(current.sessionDeckNamerRecords['fixture-0002'].title,'別の記録');
+});
+
+test('Local import refuses unrelated or dangerous files',()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);
+  const backup=vm.SessionDeckBackup;
+  assert.throws(()=>backup.decode('{"app":"other","data":{}}'));
+  assert.throws(()=>backup.decode('{"app":"Session Deck Namer","data":{"unknown":{}}}'));
+  assert.throws(()=>backup.decode('{"app":"Session Deck Namer","data":{"sessionDeckNamerRecords":{"__proto__":{}}}}'));
+});

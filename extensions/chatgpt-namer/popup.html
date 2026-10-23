@@ -42,6 +42,11 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 <button id="rename" class="primary" disabled>この会話の名前を変更</button>
 </details>
 <p id="result" role="status" aria-live="polite"></p>
+<details><summary>保存データの移動（端末内ファイル）</summary>
+<p class="note">実会話のID・名前を含みます。公開GitHubへアップロードしないでください。読み込み先と競合するデータは上書きしません。</p>
+<button id="export">保存データをファイルに保存</button>
+<label for="import">保存データを読み込む</label><input id="import" type="file" accept="application/json,.json">
+<p id="backupResult" role="status"></p></details>
 <p class="note">自動・一括変更はしません。ChatGPT画面から変更成功を確認できない場合は「未確認」と表示します。ログイン情報・会話本文・認証情報は取得しません。</p>
-<script src="naming-core.js"></script><script src="popup.js"></script>
+<script src="naming-core.js"></script><script src="backup.js"></script><script src="popup.js"></script>
 </body></html>
