@@ -153,11 +153,13 @@
       const item={id,title,previousTitle:previous||null,updatedAt:new Date().toISOString(),verification:'ui_observed'};
       const store=await chrome.storage.local.get(STORAGE);
       const records=store[STORAGE]&&typeof store[STORAGE]==='object'?store[STORAGE]:{};
-      // Retain the existing record map and append per-conversation history.
-      records[id]=item;
       const historyStore=await chrome.storage.local.get(HISTORY+id);
       const history=Array.isArray(historyStore[HISTORY+id])?historyStore[HISTORY+id]:[];
-      await chrome.storage.local.set({[STORAGE]:records,[HISTORY+id]:[...history,item]});
+      // Imported legacy records may not yet be in this conversation's history.
+      const prior=records[id];
+      const retained=prior&&!history.some(entry=>JSON.stringify(entry)===JSON.stringify(prior))?[...history,prior]:history;
+      records[id]=item;
+      await chrome.storage.local.set({[STORAGE]:records,[HISTORY+id]:[...retained,item]});
       return {status:'ui_verified',title,verification:'ui_observed'};
     }finally{busy=false;}
   }
