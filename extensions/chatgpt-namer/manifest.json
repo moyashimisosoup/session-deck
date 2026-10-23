@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Session Deck Namer (manual)",
-  "version": "0.3.2",
+  "name": "Session Deck Namer",
+  "version": "0.4.0",
   "description": "Explicit, one-conversation-at-a-time ChatGPT Web rename helper with UI readback and safe fallback.",
   "permissions": [
     "storage",
@@ -13,6 +13,7 @@
         "https://chatgpt.com/*"
       ],
       "js": [
+        "naming-core.js",
         "content.js"
       ],
       "run_at": "document_idle"
@@ -23,4 +24,3 @@
     "default_title": "Session Deck Namer"
   }
 }
-
