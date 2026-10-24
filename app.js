@@ -72,14 +72,50 @@ function render(){projectsNav();const label={overview:'概要',works:'作業一�
 function closeSidebar(){$('sidebar').classList.remove('open');if($('detailDrawer').hidden)$('drawerBackdrop').hidden=true;}
 function showSidebar(){$('sidebar').classList.add('open');$('drawerBackdrop').hidden=false;}
 function nav(view){if(!['overview','works','sessions','handoffs'].includes(view))return;ui.view=view;ui.search='';ui.filter='all';ui.platform='all';closeSidebar();render();window.scrollTo({top:0,behavior:'instant'});}
-function openDrawer(html){closeSidebar();$('drawerContent').innerHTML=html;$('detailDrawer').hidden=false;$('drawerBackdrop').hidden=false;document.body.style.overflow='hidden';$('detailDrawer').querySelector('[data-action="close-drawer"]')?.focus();}
-function closeDrawer(){$('detailDrawer').hidden=true;$('drawerBackdrop').hidden=true;document.body.style.overflow='';}
+let drawerOpener = null;
+let modalOpener = null;
+function restoreDialogFocus(opener){
+  // The original card may have been replaced by render(); never focus a stale node.
+  const target = opener?.isConnected && opener.getClientRects().length ? opener : $('mainContent');
+  target?.focus({preventScroll:true});
+}
+function openDrawer(html){
+  if($('detailDrawer').hidden)drawerOpener=document.activeElement;
+  closeSidebar();$('drawerContent').innerHTML=html;$('detailDrawer').hidden=false;$('drawerBackdrop').hidden=false;document.body.style.overflow='hidden';
+  $('detailDrawer').querySelector('[data-action="close-drawer"]')?.focus();
+}
+function closeDrawer(){
+  if($('detailDrawer').hidden)return;
+  $('detailDrawer').hidden=true;$('drawerBackdrop').hidden=true;document.body.style.overflow='';
+  const opener=drawerOpener;drawerOpener=null;
+  if($('formModal').hidden)restoreDialogFocus(opener);
+}
 const closeButton='<button type="button" class="icon-button" data-action="close-drawer" aria-label="詳細を閉じる">✕</button>';
 function detailWork(id){let w=work(id);if(!w)return;let ss=relatedSessions(w),h=data.handoffs.filter(h=>h.workId===id);openDrawer(`<div class="drawer-inner"><div class="drawer-header"><div class="drawer-kicker">WORK / ${esc(w.id)}</div>${closeButton}</div><div>${statusBadge(w.status)}</div><h2 id="drawerTitle">${esc(w.title)}</h2><div class="drawer-desc">${esc(w.description)}</div><div class="drawer-section"><h3>作業情報</h3><div class="key-value"><span>作業ID</span><span class="mono">${esc(w.id)}</span></div><div class="key-value"><span>プロジェクト</span><span>${esc(project(w.projectId)?.name||'未分類')}</span></div><div class="key-value"><span>担当</span><span>${esc(w.owner)}</span></div><div class="key-value"><span>最終記録</span><span>${dateFmt(w.updatedAt)} JST</span></div><div class="key-value"><span>書込みclaim</span><span>${esc(w.claim||'なし（デモ）')}</span></div></div><div class="drawer-section"><h3>関連セッション（${ss.length}）</h3>${ss.map(s=>`<button class="related-item" type="button" style="border:0;background:none;width:100%;text-align:left" data-action="detail-session" data-id="${esc(s.key)}">${providerMark(s.platform)}<span>${esc(PLATFORM[s.platform])}</span><span>${esc(s.key)}　›</span></button>`).join('')||'<p class="muted">まだ登録されていません</p>'}</div><div class="drawer-section"><h3>引継ぎ（${h.length}）</h3>${h.map(x=>`<p class="muted">${dateFmt(x.time)} ${esc(x.from)} → ${esc(x.to)}<br>${esc(x.summary)}</p>`).join('')||'<p class="muted">引継ぎ記録はありません</p>'}</div><div class="drawer-section"><h3>状態を変更（ローカルデモ）</h3><select id="drawerWorkStatus" class="form-field" aria-label="作業の状態">${Object.entries(STATUS).map(([code,a])=>`<option value="${code}" ${code===w.status?'selected':''}>${a[0]}</option>`).join('')}</select><div class="drawer-actions"><button type="button" class="primary-button" data-action="save-status" data-id="${esc(w.id)}">状態を保存</button><button type="button" class="secondary-button" data-action="add-linked-session" data-id="${esc(w.id)}">＋ セッションを追加</button></div></div><p class="muted">デモ状態の変更であり、外部の作業やAIセッションには影響しません。</p></div>`);}
 function makeTitle(s,workId){let w=work(workId),cat= w ? w.title.slice(0,6) : '新規作業';let d=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit'}).formatToParts(new Date());let mm=d.find(v=>v.type==='month').value,dd=d.find(v=>v.type==='day').value;return `【${cat}】${mm}${dd}・${w?.id||'未採番'}・${w?.title||'内容未定'}`;}
 function detailSession(key){let s=session(key);if(!s)return;let mismatch=s.title!==s.observed;openDrawer(`<div class="drawer-inner"><div class="drawer-header"><div class="drawer-kicker">SESSION / ${esc(s.key)}</div>${closeButton}</div><div>${provider(s.platform)}</div><h2 id="drawerTitle">${esc(s.title)}</h2><p class="drawer-desc">${esc(s.note||'セッションの説明はありません')}</p><div class="drawer-section"><h3>名前の管理</h3><div class="key-value"><span>正式名称</span><span>${esc(s.title)}</span></div><div class="key-value"><span>観測した表示名</span><span>${esc(s.observed||'未取得')}</span></div><div style="margin-top:13px">${mismatch?'<span class="pill review">命名不一致</span>':'<span class="pill active">命名一致</span>'}</div><div class="drawer-actions"><button type="button" class="primary-button" data-action="copy-title" data-id="${esc(s.key)}">⧉ 正式名をコピー</button><button type="button" class="secondary-button" data-action="rename-session" data-id="${esc(s.key)}">正式名を編集</button></div><p class="muted">実際のChatGPT・Claude Code・Codexのタイトルは変更しません。</p></div><div class="drawer-section"><h3>セッション情報</h3><div class="key-value"><span>内部キー</span><span class="mono">${esc(s.key)}</span></div><div class="key-value"><span>会話ID（デモ）</span><span class="mono">${esc(s.nativeId)}</span></div><div class="key-value"><span>状態</span><span>${esc(sessionState[s.state]||'未確認')}</span></div><div class="key-value"><span>最終記録</span><span>${dateFmt(s.lastSeen)} JST</span></div><div class="key-value"><span>情報源</span><span>${esc(s.source)}</span></div></div><div class="drawer-section"><h3>関連する作業</h3>${s.workIds.map(id=>`<button class="related-item" type="button" style="border:0;background:none;width:100%;text-align:left" data-action="detail-work" data-id="${esc(id)}"><span class="mono">${esc(id)}</span><span>${esc(work(id)?.title||'不明な作業')}　›</span></button>`).join('')||'<p class="muted">まだ登録されていません</p>'}</div><p class="muted">※ すべてデモ上の登録値であり、実際の稼働状況を表しません。</p></div>`);}
-function openModal(content){$('modalContent').innerHTML=content;$('formModal').hidden=false;$('modalBackdrop').hidden=false;document.body.style.overflow='hidden';$('formModal').querySelector('input,select,textarea,button')?.focus();}
-function closeModal(){$('formModal').hidden=true;$('modalBackdrop').hidden=true;document.body.style.overflow=$('detailDrawer').hidden?'':'hidden';}
+function openModal(content){
+  if($('formModal').hidden)modalOpener=document.activeElement;
+  $('modalContent').innerHTML=content;$('formModal').hidden=false;$('modalBackdrop').hidden=false;document.body.style.overflow='hidden';
+  $('formModal').querySelector('input,select,textarea,button')?.focus();
+}
+function closeModal(){
+  if($('formModal').hidden)return;
+  $('formModal').hidden=true;$('modalBackdrop').hidden=true;document.body.style.overflow=$('detailDrawer').hidden?'':'hidden';
+  const opener=modalOpener;modalOpener=null;
+  restoreDialogFocus(opener);
+}
+function trapDialogFocus(event){
+  const dialog=!$('formModal').hidden?$('formModal'):!$('detailDrawer').hidden?$('detailDrawer'):null;
+  if(!dialog)return;
+  const controls=[...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(el=>!el.hidden&&el.getClientRects().length);
+  if(!controls.length){event.preventDefault();return;}
+  const first=controls[0],last=controls[controls.length-1],active=document.activeElement;
+  if(!dialog.contains(active)){event.preventDefault();(event.shiftKey?last:first).focus();return;}
+  if(event.shiftKey&&active===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&active===last){event.preventDefault();first.focus();}
+}
 function modalBase(title,body,submit,kind){return `<form id="editForm" data-kind="${kind}" class="modal-inner"><div class="modal-header"><h2 id="modalTitle">${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="閉じる">✕</button></div>${body}<div class="form-actions"><button type="button" class="secondary-button" data-action="close-modal">キャンセル</button><button class="primary-button" type="submit">${submit}</button></div></form>`}
 function newWork(){let options=data.projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');openModal(modalBase('新しい作業を登録',`<label class="form-label" for="fProject">プロジェクト</label><select id="fProject" name="project" class="form-field" required>${options}</select><label class="form-label" for="fTitle">作業名</label><input id="fTitle" name="title" class="form-field" placeholder="例：設定画面の設計" maxlength="60" required><label class="form-label" for="fDesc">内容</label><textarea id="fDesc" name="description" class="form-field" rows="3" maxlength="300" placeholder="目的と完了条件を簡潔に"></textarea><label class="form-label" for="fOwner">担当</label><select id="fOwner" name="owner" class="form-field">${['未割当','ChatGPT','Claude Code','Codex'].map(s=>`<option>${s}</option>`).join('')}</select><p class="input-note">作業IDはデモ用に自動生成されます。ブラウザ内にのみ保存します。</p>`,'作業を追加','work'));}
 function newSession(assignedId){let opts=data.works.map(w=>`<option value="${esc(w.id)}" ${w.id===assignedId?'selected':''}>${esc(w.id)} ${esc(w.title)}</option>`).join('');openModal(modalBase('セッションを登録',`<label class="form-label" for="fPlatform">プラットフォーム</label><select id="fPlatform" name="platform" class="form-field">${Object.entries(PLATFORM).map(([id,n])=>`<option value="${id}">${n}</option>`).join('')}</select><label class="form-label" for="fWork">関連する作業</label><select id="fWork" name="workId" class="form-field" required>${opts}</select><label class="form-label" for="fObserved">現在の表示名（任意）</label><input id="fObserved" name="observed" class="form-field" placeholder="例：新しいチャット" maxlength="120"><label class="form-label" for="fNative">プラットフォーム固有ID（任意）</label><input id="fNative" name="nativeId" class="form-field" placeholder="未設定ならデモ用IDを生成" maxlength="180"><p class="input-note">正式名は命名規則に従って生成します。実サービスとの接続や改名は行いません。</p>`,'登録する','session'));}
@@ -108,5 +144,5 @@ $('resetBtn').addEventListener('click',()=>{if(confirm('ブラウザ内のデモ
 $('menuToggle').addEventListener('click',()=>showSidebar());
 $('drawerBackdrop').addEventListener('click',()=>{closeSidebar();closeDrawer()});
 $('modalBackdrop').addEventListener('click',closeModal);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('formModal').hidden)closeModal();else if(!$('detailDrawer').hidden)closeDrawer();else closeSidebar();}});
+document.addEventListener('keydown',e=>{if(e.key==='Tab')trapDialogFocus(e);else if(e.key==='Escape'){if(!$('formModal').hidden)closeModal();else if(!$('detailDrawer').hidden)closeDrawer();else closeSidebar();}});
 render();
