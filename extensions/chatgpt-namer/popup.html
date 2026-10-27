@@ -18,11 +18,13 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 </style></head>
 <body>
 <h1>Session Deck Namer</h1>
+<p class="tip">一言起動用のプロジェクト指示を設定すると「自動命名をONにして」で、この会話の登録・ONをまとめて行えます。登録済み作業との一致が必要です。</p>
 <p class="tip">作業別の自動命名をONにすると、今後その作業へ初めて登録する会話に正式名を付けます。</p>
 <div class="card"><strong>現在の会話</strong><div id="session">確認中…</div></div>
 <a class="link" href="https://moyashimisosoup.github.io/session-deck/naming.html" target="_blank" rel="noopener noreferrer">命名コンソールを開く ↗</a>
 <div class="card">
 <label for="work">登録済みの作業</label><select id="work"><option value="">作業を選択してください</option></select>
+<button id="copyNamingInstructions" disabled>この作業の一言命名用指示をコピー</button>
 <label for="date">日付（JST / MMDD）</label><input id="date" maxlength="4" inputmode="numeric">
 <button id="bind" disabled>選択した作業をこの会話に登録</button>
 <button id="unbind" disabled>この会話との対応を解除</button>
@@ -50,5 +52,5 @@ button:focus-visible,textarea:focus-visible{outline:2px solid #8aa2ff;outline-of
 <label for="import">保存データを読み込む</label><input id="import" type="file" accept="application/json,.json">
 <p id="backupResult" role="status"></p></details>
 <p class="note">自動改名は会話ごとに候補を固定します。作業別ONは今後の初回登録に適用し、作業別OFFはその許可による未完了の改名も止めます。失敗・中断後は自動再試行しません。許可は保存ファイルに含みません。本文・認証情報は取得しません。</p>
-<script src="naming-core.js"></script><script src="backup.js"></script><script src="popup.js"></script>
+<script src="naming-core.js"></script><script src="command.js"></script><script src="backup.js"></script><script src="popup.js"></script>
 </body></html>
