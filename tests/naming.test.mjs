@@ -8,6 +8,7 @@ const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const html=read('naming.html');
 const content=read('extensions/chatgpt-namer/content.js');
 const core=read('extensions/chatgpt-namer/naming-core.js');
+const command=read('extensions/chatgpt-namer/command.js');
 const popup=read('extensions/chatgpt-namer/popup.js');
 const manifest=JSON.parse(read('extensions/chatgpt-namer/manifest.json'));
 
@@ -18,6 +19,7 @@ test('Naming console and Chrome extension are standalone and syntax-valid',()=>{
   assert.equal(scripts.length,1);
   new Script(scripts[0][1]);
   new Script(content);
+  new Script(command);
   new Script(popup);
   assert.equal(manifest.manifest_version,3);
   assert.deepEqual(manifest.permissions,['storage','activeTab']);
@@ -52,8 +54,9 @@ test('Naming console creates valid titles and refuses invalid work ID',()=>{
 
 function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=false, noRename=false, dialogInputTypes=null, foreignMenu=false, mixedRow=false, foreignEditor=false, onMenu=null, store={}, initialTitle='旧チャット', locks=makeLocks(), focused=true, saveFailure=false, onSet=null, conversationId='aabbccdd-1234-5678-9abc-abcdefabcdef'}={}){
   const id=conversationId;
-  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0,sidebarReady=true;
-  const intervals=[];
+  let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0,sidebarReady=true,messages=[];
+  const intervals=[],domListeners={};
+  let composer=null;
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>row};
   const row={querySelectorAll:s=>s==='a[href*="/c/"]'?(mixedRow?[anchor,{href:'https://chatgpt.com/c/other-chat'}]:[anchor]):[menuButton]};
@@ -79,8 +82,11 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     }};
   const dialogInputs=(dialogInputTypes||[]).map((type,index)=>index===0?Object.assign(input,{typeAttribute:type,type:type||'text'}):{...input,typeAttribute:type,type:type||'text'});
   const document={
+    addEventListener:(type,fn)=>{domListeners[type]=fn;},
     visibilityState:'visible',hasFocus:()=>focused,
     querySelectorAll:s=>{
+      if(s==='[data-message-author-role]')return messages;
+      if(s==='#prompt-textarea')return composer?[composer]:[];
       if(s==='a[href*="/c/"]')return sidebarReady?[anchor]:[];
       if(s==='[role="menu"]')return menuOpen?[menu]:[];
       if(s.startsWith('[role="menuitem"],'))return menuOpen?menuItems:[];
@@ -98,12 +104,19 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     Event:class{constructor(type){this.type=type}},
     KeyboardEvent:class{constructor(type,props){this.type=type;this.key=props.key;this.code=props.code;}},setTimeout,clearTimeout,console,
     navigator:{locks},crypto:{randomUUID:()=>globalThis.crypto.randomUUID()},setInterval:fn=>intervals.push(fn)};
-  runInNewContext(core+'\n'+content,vm);
+  runInNewContext(core+'\n'+command+'\n'+content,vm);
   const send=message=>new Promise(resolve=>listener({expectedTitle:title,...message},null,resolve));
   // A foreign menu has neither ownership relation, even when its label matches.
   if(foreignMenu){menu.id='unrelated-menu';menuButton.getAttribute=()=>null;}
   return {send,id,store,getTitle:()=>title,getSaves:()=>saves,async tick(){await intervals[0]();},
     focus(value){focused=value;},hide(value){document.visibilityState=value?'hidden':'visible';},sidebar(value){sidebarReady=value;},
+    messages(value,submit=true){
+      if(submit){
+        const user=value.filter(m=>m.getAttribute('data-message-author-role')==='user').at(-1);
+        composer=user;domListeners.keydown?.({isTrusted:true,type:'keydown',key:'Enter',target:{closest:s=>s==='#prompt-textarea'?composer:null}});
+      }
+      messages=value;
+    },
     setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
 }
 
@@ -637,4 +650,93 @@ test('Unbinding another conversation never revokes the pre-existing explicit aut
   await b.send({type:'UNBIND_WORK',expectedId:b.id});
   assert.equal((await a.send({type:'GET_STATUS'})).auto.state,'enabled');
   await a.tick();assert.equal(a.getSaves(),1);
+});
+
+function commandTurn({requestId='user-command-0001',text='自動命名をONにして',payload={...work,date:'1028'},blocks=1,quoted=false,userCode=false}={}){
+  const textNode=text=>({nodeType:3,nodeValue:text});
+  const block={childNodes:[textNode(typeof payload==='string'?payload:JSON.stringify(payload))],closest:()=>quoted?{}:null};
+  const user={childNodes:[textNode(text)],getAttribute:k=>k==='data-message-author-role'?'user':requestId,querySelector:()=>userCode?{}:null};
+  const assistant={getAttribute:k=>k==='data-message-author-role'?'assistant':'reply-fixture',querySelectorAll:()=>Array.from({length:blocks},()=>block)};
+  return [user,assistant];
+}
+const commandKey=id=>'sessionDeckNamerCommand:'+id;
+
+test('Direct command parser rejects quoted, explanatory, oversized and malformed instructions',()=>{
+  const vm={};runInNewContext(core+'\n'+command,vm);const api=vm.SessionDeckNamerCommand;
+  assert.equal(api.action('自動命名をONにして。'),'on');assert.equal(api.action('自動命名をOFFにしてください'),'off');
+  for(const text of ['「自動命名をONにして」','自動命名をONにして、と言う例','自動命名をONにして\n別の依頼'])assert.equal(api.action(text),null);
+  for(const payload of [{...work,date:'1332'},{...work,date:'1028',unknown:true},['bad'],null])assert.throws(()=>api.decode(JSON.stringify(payload)));
+  assert.throws(()=>api.decode('x'.repeat(2049)));
+  const observe=options=>api.observe({querySelectorAll:()=>commandTurn(options)});
+  assert.equal(observe({text:'長'.repeat(65)}),null);assert.equal(observe({blocks:2}),null);
+  assert.equal(observe({quoted:true}),null);assert.equal(observe({payload:'{"workId":'}),null);
+  assert.equal(observe({userCode:true}),null);
+});
+
+test('A direct request and marked reply bind an existing work and rename once without any ON button',async()=>{
+  const store={},setup=simulateChatGPT({store});await bind(setup);
+  const sim=simulateChatGPT({store,conversationId:'command-chat-0002'});sim.messages(commandTurn());
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  assert.equal(sim.getTitle(),'【命名テスト】1028・TEST-001・登録した作業からの候補');
+  assert.equal((await sim.send({type:'GET_STATUS'})).auto.state,'completed');
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  const reload=simulateChatGPT({store,conversationId:sim.id,initialTitle:sim.getTitle()});reload.messages(commandTurn());
+  await reload.tick();assert.equal(reload.getSaves(),0);
+});
+
+test('Only the latest direct user request can authorize a marked reply; stale and quoted blocks do not rename',async()=>{
+  const store={},setup=simulateChatGPT({store});await bind(setup);
+  for(const options of [{blocks:2},{quoted:true},{text:'「自動命名をONにして」と依頼したい'},{blocks:0}]){
+    const sim=simulateChatGPT({store,conversationId:'command-chat-0002'});sim.messages(commandTurn(options));await sim.tick();assert.equal(sim.getSaves(),0);
+  }
+  const sim=simulateChatGPT({store,conversationId:'command-chat-0003'});
+  sim.messages([...commandTurn(),...commandTurn({requestId:'new-user',text:'通常の質問',blocks:0})]);
+  await sim.tick();assert.equal(sim.getSaves(),0);assert.equal(store[commandKey(sim.id)],undefined);
+  const opened=simulateChatGPT({store,conversationId:'command-chat-0004'});opened.messages(commandTurn(),false);
+  await opened.tick();assert.equal(opened.getSaves(),0); // No fresh trusted send.
+  const moved=simulateChatGPT({store,conversationId:'command-chat-0005'});moved.messages(commandTurn());
+  moved.navigate('/c/command-chat-0006');await moved.tick();assert.equal(moved.getSaves(),0);
+});
+
+test('Unknown work, mismatched work contents, binding date changes and manual edits reject one-phrase activation',async()=>{
+  for(const variant of ['unknown','changed','date','manual']){
+    const store={},sim=simulateChatGPT({store});await bind(sim);
+    let payload={...work,date:'1028'};
+    if(variant==='unknown')payload.workId='UNKNOWN-001';
+    if(variant==='changed')payload.detail='未承認の内容';
+    if(variant==='manual'){payload.date='1022';sim.setTitle('手動の表示名');}
+    sim.messages(commandTurn({payload}));await sim.tick();assert.equal(sim.getSaves(),0,variant);
+    assert.equal(store[commandKey(sim.id)].state,'rejected',variant);
+    await sim.tick();assert.equal(sim.getSaves(),0);
+  }
+});
+
+test('Request changes, UI OFF and one-phrase OFF cancel pending command grants without reviving them',async()=>{
+  const store={},setup=simulateChatGPT({store});await bind(setup);
+  let sim;sim=simulateChatGPT({store,conversationId:'command-chat-0002',onMenu:()=>sim.messages(commandTurn({requestId:'off-user-0002',text:'自動命名をOFFにして'}))});
+  sim.messages(commandTurn());await sim.tick();assert.equal(sim.getSaves(),0);
+  await sim.tick();assert.equal(store[commandKey(sim.id)].state,'stopped');
+  const next=simulateChatGPT({store,conversationId:'command-chat-0003',onSet:async items=>{
+    if(items[workGrant('command-chat-0003')]?.commandRequestId)await next.send({type:'STOP_AUTO'});
+  }});
+  next.messages(commandTurn());await next.tick();await next.tick();assert.equal(next.getSaves(),0);
+});
+
+test('Failed command attempts are consumed and shared-tab processing permits at most one save',async()=>{
+  const store={},setup=simulateChatGPT({store});await bind(setup);
+  await enable(setup);store[autoKey].state='running'; // Another conversation's interrupted legacy grant stays isolated.
+  const failed=simulateChatGPT({store,conversationId:'command-chat-0002',saveFailure:true});failed.messages(commandTurn());
+  await failed.tick();await failed.tick();assert.equal(failed.getSaves(),1);
+  const locks=makeLocks(),a=simulateChatGPT({store,locks,conversationId:'command-chat-0003'}),b=simulateChatGPT({store,locks,conversationId:a.id});
+  a.messages(commandTurn());b.messages(commandTurn());await Promise.all([a.tick(),b.tick()]);
+  await a.tick();await b.tick();assert.equal(a.getSaves()+b.getSaves(),1);
+});
+
+test('Command receipts, cancellations and grants are excluded from backup transfer',()=>{
+  const vm={};runInNewContext(read('extensions/chatgpt-namer/backup.js'),vm);const api=vm.SessionDeckBackup;
+  for(const key of [commandKey('fixture-chat'),'sessionDeckNamerCommandCancelled:fixture-chat']){
+    const restored=api.decode(api.encode({[key]:{requestId:'synthetic-request'},sessionDeckNamerRecords:{}}));
+    assert.equal(key in restored,false);
+    assert.throws(()=>api.decode(JSON.stringify({app:'Session Deck Namer',data:{[key]:{}}})));
+  }
 });

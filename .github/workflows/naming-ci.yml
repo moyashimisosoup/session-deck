@@ -26,4 +26,5 @@ jobs:
       - run: node scripts/sync_naming_core.mjs --check
       - run: |
           node --check extensions/chatgpt-namer/content.js
+          node --check extensions/chatgpt-namer/command.js
           node --check extensions/chatgpt-namer/popup.js
