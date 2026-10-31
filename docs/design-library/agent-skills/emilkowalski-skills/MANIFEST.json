@@ -1,0 +1,153 @@
+{
+  "id": "AGSK-0001",
+  "source_repository": "https://github.com/emilkowalski/skills",
+  "source_commit": "a81dbca07f2217b7103e510c0f13f8d5b017afc9",
+  "source_commit_date_utc": "2026-10-28T18:25:28Z",
+  "import_review_date_jst": "2026-11-01",
+  "license": "MIT",
+  "purpose": "Reference snapshot; no automatic installation or activation",
+  "file_count": 28,
+  "skill_count": 16,
+  "files": [
+    {
+      "path": "LICENSE",
+      "upstream_git_blob_sha": "57b46f1fd11dc62351ea548104a88aa3f659c11b",
+      "bytes": 1070
+    },
+    {
+      "path": "README.md",
+      "upstream_git_blob_sha": "eb13e61d196401244b3c2061f322943c42313078",
+      "bytes": 4846
+    },
+    {
+      "path": "performance-cheatsheet.md",
+      "upstream_git_blob_sha": "5b279577685cebabbfbb0197bd6b3a74591b3392",
+      "bytes": 932
+    },
+    {
+      "path": "skills/animate-expo/RECIPES.md",
+      "upstream_git_blob_sha": "a02e6b80f9dec86f196590f2f7a4fe3310ea1cb4",
+      "bytes": 16808
+    },
+    {
+      "path": "skills/animate-expo/SKILL.md",
+      "upstream_git_blob_sha": "78b39e1d22e8c3c15be96ccebe04bf39792f3455",
+      "bytes": 17891
+    },
+    {
+      "path": "skills/animate/RECIPES.md",
+      "upstream_git_blob_sha": "6744891261bdf0bb0473d77f2cc706f2d78b574e",
+      "bytes": 7957
+    },
+    {
+      "path": "skills/animate/SKILL.md",
+      "upstream_git_blob_sha": "7c3b20c6ed681b2d47c9ca9e3ee0e659ed47d032",
+      "bytes": 11860
+    },
+    {
+      "path": "skills/animation-performance/SKILL.md",
+      "upstream_git_blob_sha": "d688dd7c3ba143c6ae17efd2bc665380d5252c5a",
+      "bytes": 13966
+    },
+    {
+      "path": "skills/animation-vocabulary/SKILL.md",
+      "upstream_git_blob_sha": "5ab2976514c74a194ebf069506d95ff3a5a0084f",
+      "bytes": 13425
+    },
+    {
+      "path": "skills/apple-design/SKILL.md",
+      "upstream_git_blob_sha": "adf68c517f2d7d2781587d619de07f4de286da57",
+      "bytes": 23036
+    },
+    {
+      "path": "skills/ask-sonner/API.md",
+      "upstream_git_blob_sha": "d2b0f3cf93d9495a8496275dc6e70199302df0f1",
+      "bytes": 4545
+    },
+    {
+      "path": "skills/ask-sonner/SKILL.md",
+      "upstream_git_blob_sha": "6cf9217f409315466ecfd7796de4591879983637",
+      "bytes": 7233
+    },
+    {
+      "path": "skills/break-ui/CATALOG.md",
+      "upstream_git_blob_sha": "46962bb89445b8526ea94994a79b49508573b5fd",
+      "bytes": 8268
+    },
+    {
+      "path": "skills/break-ui/SKILL.md",
+      "upstream_git_blob_sha": "091a28d488662d2451131f1aaa60a6dcd2391932",
+      "bytes": 14380
+    },
+    {
+      "path": "skills/emil-design-eng/SKILL.md",
+      "upstream_git_blob_sha": "62ce902af8dd32c590ea7203e9ab2edb1d6ef81a",
+      "bytes": 27123
+    },
+    {
+      "path": "skills/find-animation-opportunities/SKILL.md",
+      "upstream_git_blob_sha": "d3b030fbca9abad9220a032f72d425c6b7fa2de8",
+      "bytes": 9808
+    },
+    {
+      "path": "skills/improve-animations/AUDIT.md",
+      "upstream_git_blob_sha": "94056154e532d695b8792ea67d701625b4f43b6e",
+      "bytes": 7387
+    },
+    {
+      "path": "skills/improve-animations/PLAN-TEMPLATE.md",
+      "upstream_git_blob_sha": "239026b91f8032df191dde2085fd796b8c116d91",
+      "bytes": 3100
+    },
+    {
+      "path": "skills/improve-animations/SKILL.md",
+      "upstream_git_blob_sha": "d6e77f37272329af0cc36f9eeedbe5226e86ce63",
+      "bytes": 8208
+    },
+    {
+      "path": "skills/mobile-native/SKILL.md",
+      "upstream_git_blob_sha": "94bba21fcb990b850e06effbf5709c96a07446ad",
+      "bytes": 16838
+    },
+    {
+      "path": "skills/pick-ui-library/SKILL.md",
+      "upstream_git_blob_sha": "5e0028e988b88d2a88a019fdc978b4732243e467",
+      "bytes": 4790
+    },
+    {
+      "path": "skills/prototype/PICKER.md",
+      "upstream_git_blob_sha": "aaa88c0eba38eb01c00d4eb2b144e39f808fc26a",
+      "bytes": 7548
+    },
+    {
+      "path": "skills/prototype/SKILL.md",
+      "upstream_git_blob_sha": "dbcc1a23c66933f7372c0aacbce2b0d7cc6100b6",
+      "bytes": 7830
+    },
+    {
+      "path": "skills/remove-animations/SKILL.md",
+      "upstream_git_blob_sha": "100b7b7666f7d09c69a75ebb793e30e607058e77",
+      "bytes": 11345
+    },
+    {
+      "path": "skills/review-animations/SKILL.md",
+      "upstream_git_blob_sha": "577a64397267ce20960de2202950594d5bd6f9b6",
+      "bytes": 8407
+    },
+    {
+      "path": "skills/review-animations/STANDARDS.md",
+      "upstream_git_blob_sha": "863ea12ea94c1f7a47b5f7e1019e976aa82bd4cd",
+      "bytes": 9801
+    },
+    {
+      "path": "skills/write-swift/SKILL.md",
+      "upstream_git_blob_sha": "a09a8f693304fe1c04ed56d61dde9833a516849e",
+      "bytes": 42445
+    },
+    {
+      "path": "ui-cheatsheet.md",
+      "upstream_git_blob_sha": "a5c803280b82f72dd11ed2136caaf0ea8c139a5c",
+      "bytes": 1344
+    }
+  ]
+}
