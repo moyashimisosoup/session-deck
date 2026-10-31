@@ -24,3 +24,9 @@
 - 第三者の画像は権利を確認せず自分の制作素材としてコピーしない。
 - 配色・構図は特定アプリへ強制適用せず、実画面の可読性・アクセシビリティを優先する。
 - [APP-003広告参考画像ライブラリ](https://github.com/yama-books/mansion-poet/blob/main/docs/APP003_REFERENCE_IMAGE_LIBRARY_SPEC.md)は目的と権利フローの異なる独立ライブラリとして管理する。
+
+## Agent Skills（外部スキルの監査済み保管）
+
+- **AGSK-0001**：[Emil Kowalski Skills（16種類）](./agent-skills/emilkowalski-skills/INDEX.md)  
+  UI・アニメーション・モバイル・プロトタイプ・Swift等のスキル本文と付属資料計28ファイルを、上流コミット`a81dbca07f22`固定で保存。MITライセンスとファイルごとの原本SHA一覧を含む。
+- **状態：GitHub保管済み、エージェントへのインストールは未実施**。上流READMEにあるインストール用コマンドも自動実行しない。採用・更新時は個別アプリの権限・承認ルールに従う。
