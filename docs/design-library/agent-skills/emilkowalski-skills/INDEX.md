@@ -10,6 +10,12 @@ AIコーディングエージェント向けデザインスキル集の、**監�
 - 原本照合：各ファイルのGit blob SHAを一致検証（[MANIFEST.json](./MANIFEST.json)）
 - **状態：GitHubに参照資料として保存済み。各AIエージェントへのインストール・有効化は未実施。**
 
+## Windowsローカルで使う
+
+- [Codex / Claude Code向け安全な導入手順](../../../INSTALL_EMILKOWALSKI_SKILLS_WINDOWS.md)
+- [PowerShell導入スクリプト](../../../../scripts/install-emilkowalski-skills.ps1)
+- この保管先自体は参照資料であり、自動インストールはされません。Windows上でスクリプトを実行し、各ツールでスキルを認識するか確認してください。
+
 ## 16スキルの索引
 
 | No. | スキル原文 | 概要 |
