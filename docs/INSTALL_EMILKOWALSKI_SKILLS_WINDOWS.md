@@ -21,6 +21,17 @@ pwsh -NoProfile -File .\scripts\install-emilkowalski-skills.ps1 -Status
 
 リポジトリを最新版に更新し、スクリプトとMANIFESTがあることを確認してください。cdのパスは自分のPCの実際のパスに置き換えます。
 
+### `Checksum mismatch` で止まる場合（改行コード）
+
+Git for Windowsの既定（`core.autocrlf=true`）では、チェックアウト時にLFがCRLFへ変換され、SHA照合が失敗します。現在は `.gitattributes` でこのフォルダを `-text`（バイト列そのまま）に固定していますが、固定前にチェックアウトしたクローンはファイルが変換済みのままです。リポジトリ直下で次を実行して取り直してください（このフォルダの未コミット変更は消えます）。
+
+```powershell
+Remove-Item -Recurse -Force .\docs\design-library\agent-skills\emilkowalski-skills
+git checkout -- docs/design-library/agent-skills/emilkowalski-skills
+```
+
+照合に失敗した場合、スクリプトはスキル配置先に何も書き込まずに終了します。
+
 ## 導入方法B：ローカルにリポジトリがない場合
 
 まずスクリプトをファイルに保存して中身を確認してから実行してください。スクリプトは固定したGitHubコミットのZIPのみを取得し、28ファイルすべてをGit blob SHAで検証してからコピーします。
@@ -54,6 +65,26 @@ pwsh -NoProfile -File .\scripts\install-emilkowalski-skills.ps1 -Status
 - Claude Codeの新しいセッションで`/mobile-native`などを呼び出します。
 - ツールにスキルが表示されない場合、Codex / Claude Codeを再起動して確認します。
 - 本スクリプトのGitHubへの保存と、ユーザーPCでの実行・読み込み確認は別工程です。PC実機の成功は実行結果が得られるまで未確認とします。
+- `pick-ui-library`、`prototype`、`review-animations` の3つは上流で `disable-model-invocation: true` が指定されています。Claude Codeではモデルが自動で選ぶ一覧には出ず、`/pick-ui-library` のように明示的に呼び出したときだけ動きます（スラッシュコマンド一覧には16種類すべて出ます）。不具合ではありません。
+- Codexは `disable-model-invocation` を解釈しないため、16種類すべてがスキル一覧に出ます。
+
+### 実機検証記録（2026-11-01、Windows 11・PowerShell 7.6・Codex CLI 0.157・Claude Code 2.1）
+
+- 導入：Codex 16/16、Claude Code 16/16（付属資料を含む24ファイル×2をSHA照合で一致）。既存スキル・設定ファイルのハッシュは導入前後で不変。
+- 再実行：32件すべて「Skipped existing path」となり、内容は不変。
+- 認識：Codexの新規 `codex exec` セッションのスキル一覧に16/16。Claude Codeの新規プロセスの初期化情報（skills / slash_commands）に16/16。
+- 呼び出し：`mobile-native`、`break-ui`、`animate` を両エージェントで呼び出し、各 `SKILL.md` 固有の内容で回答することを確認。
+
+## スキルの更新方法
+
+スクリプトは既存フォルダを上書きしないため、更新は「差分監査 → 固定値の更新 → 退避して再導入」の順で行います。
+
+1. 上流 `emilkowalski/skills` の新しいコミットとの差分を確認し、取り込む内容を監査します。
+2. スナップショット（スキル資料・`MANIFEST.json` のSHA）を更新するPRを作り、mainへ統合します。
+3. スクリプトの `$UpstreamCommit` を新しい上流コミットに、`$SnapshotCommit` を手順2の統合コミットに更新するPRを作ります。ファイル数やスキル数が変わる場合は検証値も合わせて更新します。
+4. 各PCで、導入済みの16フォルダを配置先の外（例：`%USERPROFILE%\skills-backup\日付\`）へ移動してからスクリプトを再実行します。動作確認後に退避分を削除します。
+
+`npx skills@latest` などによる無条件の最新版導入は使いません。
 
 ## 出典と安全上の範囲
 

@@ -1,2 +1,3 @@
 /naming.html text eol=lf
 /extensions/chatgpt-namer/naming-core.js text eol=lf
+/docs/design-library/agent-skills/emilkowalski-skills/** -text

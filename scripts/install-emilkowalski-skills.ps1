@@ -143,6 +143,10 @@ try {
             throw ('Missing source file: {0}' -f $path)
         }
         if ((Get-GitBlobSha -Path $sourceFile) -ne [string]$entry.upstream_git_blob_sha) {
+            if (-not $TempDirectory) {
+                # A checkout made with core.autocrlf=true before .gitattributes pinned this folder has CRLF line endings.
+                throw ('Checksum mismatch: {0}. If this clone uses core.autocrlf=true, re-check out {1} (see docs/INSTALL_EMILKOWALSKI_SKILLS_WINDOWS.md).' -f $path, $RelativeSource)
+            }
             throw ('Checksum mismatch: {0}' -f $path)
         }
     }
