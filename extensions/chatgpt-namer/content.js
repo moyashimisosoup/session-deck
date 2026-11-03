@@ -1,4 +1,4 @@
-/* Session Deck Namer 0.6.0: opt-in work policy for newly bound conversations. */
+/* Session Deck Namer 0.7.0: explicit one-phrase, local naming-command bridge. */
 (() => {
   'use strict';
   const naming=globalThis.SessionDeckNaming;
@@ -8,6 +8,24 @@
   const AUTO='sessionDeckNamerAuto', AUTO_STOP='sessionDeckNamerAutoRevoked';
   const POLICY='sessionDeckNamerWorkAuto:', POLICY_STOP='sessionDeckNamerWorkAutoRevoked:';
   const GRANT='sessionDeckNamerWorkGrant:', GRANT_STOP='sessionDeckNamerWorkGrantRevoked:';
+  const COMMAND='sessionDeckNamerCommand:', COMMAND_CANCEL='sessionDeckNamerCommandCancelled:';
+  const commands=globalThis.SessionDeckNamerCommand;
+  let armedCommand=null;
+  // A fresh trusted send is required: merely opening old ON messages must
+  // never authorize a new conversation during SPA navigation or reload.
+  function armCommand(event){
+    if(!event.isTrusted)return;
+    if(event.type==='click'&&event.target?.closest?.('a[href]')){armedCommand=null;return;}
+    const enter=event.type==='keydown'&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.target?.closest?.('#prompt-textarea');
+    const send=event.type==='click'&&event.target?.closest?.('button[data-testid="send-button"]');
+    if(!enter&&!send)return;
+    const composers=[...document.querySelectorAll('#prompt-textarea')];
+    const mode=composers.length===1?commands?.readAction(composers[0]):null;
+    armedCommand=mode?{mode,id:currentId(),previousRequestId:commands.latestUserId(document)}:null;
+  }
+  document.addEventListener?.('keydown',armCommand,true);
+  document.addEventListener?.('click',armCommand,true);
+  globalThis.window?.addEventListener('popstate',()=>{armedCommand=null;});
   let busy=false;
   let checkingAuto=false;
   const locks=globalThis.navigator?.locks;
@@ -202,7 +220,7 @@
       (storedAuto.policyId&&storedAuto.policyId!==policy?.policyId));
     const auto=revoked?{...storedAuto,state:'stopped'}:storedAuto;
     const autoWorkIds=works.filter(w=>workPolicy(store,w)).map(w=>w.workId);
-    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked,auto,autoKey,policy,autoWorkIds,autoAvailable:Boolean(locks?.request)};
+    return {ok:true,id,currentTitle,record,binding,works,candidate,blocked,auto,autoKey,policy,autoWorkIds,command:store[COMMAND+id]||null,commandCancelled:store[COMMAND_CANCEL+id],autoAvailable:Boolean(locks?.request)};
   }
   function requireId(msg){
     const id=currentId();
@@ -246,9 +264,12 @@
     return {ok:true,...await exclusive(()=>rename(id,snapshot.candidate,msg.expectedTitle,guard))};
   }
   async function stopAuto(){
+    armedCommand=null;
     const store=await chrome.storage.local.get(null), grant=store[AUTO], id=currentId();
     // Separate revocation survives a simultaneous running/completed state write.
     const values={};
+    const request=commands?.observe(document);
+    if(id&&request?.mode==='on')values[COMMAND_CANCEL+id]=request.requestId;
     if(grant?.id===id)values[AUTO_STOP]=grant.grantId;
     if(id&&store[GRANT+id])values[GRANT_STOP+id]=store[GRANT+id].grantId;
     if(Object.keys(values).length)await chrome.storage.local.set(values);
@@ -304,6 +325,9 @@
           if(latest?.grantId===grant.grantId&&['enabled','running'].includes(latest.state))
             await chrome.storage.local.set({[s.autoKey]:{...latest,state}});
         };
+        const commandValid=()=>!grant.commandRequestId||
+          JSON.stringify(commands?.observe(document))===grant.commandSignature;
+        if(!commandValid()||(grant.commandRequestId&&s.commandCancelled===grant.commandRequestId))return update('stopped');
         if(s.blocked||s.candidate!==grant.title||s.binding?.workId!==grant.workId||
           (s.currentTitle!==grant.baseline&&s.currentTitle!==grant.title))return update('stopped');
         // Matching names require no save, including on reload or in another tab.
@@ -315,6 +339,8 @@
           const latest=await status();
           if(latest.auto?.grantId!==grant.grantId||latest.auto.state!=='running'||latest.id!==grant.id||
             latest.blocked||latest.candidate!==grant.title||latest.binding?.workId!==grant.workId||
+            !commandValid()||
+            (grant.commandRequestId&&latest.commandCancelled===grant.commandRequestId)||
             document.visibilityState!=='visible'||!document.hasFocus())throw Error('自動改名の条件が変わったため停止しました。');
         };
         try{
@@ -325,7 +351,49 @@
     }catch{/* Unavailable lock/storage: leave the grant unchanged and perform no UI write. */}
     finally{checkingAuto=false;}
   }
-  setInterval(runAuto,800);
+  async function consumeCommand(){
+    if(!armedCommand||busy||document.visibilityState!=='visible'||!document.hasFocus())return;
+    const armed=armedCommand;
+    const request=commands?.observe(document), id=currentId();
+    if(!request||!id)return;
+    if(armed.id&&armed.id!==id){armedCommand=null;return;}
+    if(request.mode!==armed.mode||request.requestId===armed.previousRequestId)return;
+    if(!armed.id)armed.id=id;
+    const key=COMMAND+id, signature=JSON.stringify(request);
+    if((await chrome.storage.local.get(key))[key]?.requestId===request.requestId)return;
+    if(request.mode==='off'){
+      // Cancel immediately, even while another tab holds the write lock.
+      await stopAuto();
+      await chrome.storage.local.set({[key]:{requestId:request.requestId,state:'stopped',notice:'一言指示で、この会話の自動命名をOFFにしました。'}});
+      return;
+    }
+    await exclusive(async()=>{
+      const s=await status();
+      if(s.command?.requestId===request.requestId||s.commandCancelled===request.requestId||s.id!==id||!s.currentTitle)return;
+      if(armedCommand!==armed||JSON.stringify(commands.observe(document))!==signature)return;
+      const payload=request.payload, work=s.works.find(w=>w.workId===payload.workId);
+      let error='';
+      if(!work||work.group!==payload.group||work.detail!==payload.detail)error='命名指示が登録済み作業と一致しません。既存作業を一度登録し、もう一度ONを依頼してください。';
+      else if(s.binding&&s.blocked)error=s.blocked;
+      else if(s.binding&&(s.binding.workId!==payload.workId||s.binding.date!==payload.date))error='既存の作業・登録日は変更しません。対応と命名指示を確認してください。';
+      else if(s.auto?.id===id&&s.auto.state==='running')error='前回の改名が未確認です。OFFにして画面を確認してください。';
+      const parsed=naming.parse(s.currentTitle);
+      if(parsed&&parsed.workId!==payload.workId)error='表示名が別作業のため保護しています。';
+      if(s.record&&s.currentTitle!==s.record.title)error='手動変更された名前を保護しています。';
+      if(currentId()!==id||observedName(id)!==s.currentTitle||JSON.stringify(commands.observe(document))!==signature)return;
+      const receipt={requestId:request.requestId,state:error?'rejected':'accepted',notice:error||'一言指示を受け付け、この会話の候補を自動で適用します。'};
+      const values={[key]:receipt};
+      if(!error){
+        values[BINDING+id]=s.binding||{workId:work.workId,date:payload.date,baselineTitle:s.currentTitle};
+        values[GRANT+id]={grantId:crypto.randomUUID(),id,workId:work.workId,title:naming.generate(payload),baseline:s.currentTitle,
+          state:'enabled',commandRequestId:request.requestId,commandSignature:signature};
+      }
+      // Persist the consumed request and grant together, before any UI action.
+      await chrome.storage.local.set(values);
+      if(armedCommand===armed)armedCommand=null;
+    });
+  }
+  setInterval(async()=>{try{await consumeCommand();}catch{/* No command authority was acquired. */}await runAuto();},800);
   chrome.runtime.onMessage.addListener((msg,_sender,respond)=>{
     (async()=>{
       if(msg?.type==='GET_STATUS'){
@@ -353,7 +421,8 @@
     return true;
   });
 
-  // Observe only route and the uniquely matched sidebar title, never transcript.
+  // Also recognize only the last short direct command and its marked reply.
+  // Never collect, store or transmit general conversation text.
   // No worker, network request, or injected page-history hook.
   if(typeof document.createElement==='function'){
     const host=document.createElement('div');
@@ -414,7 +483,7 @@
           state==='stopped'?'自動改名OFF：停止済み。編集画面が残る場合はキャンセルしてください。':'自動改名OFF（初期状態）。';
         autoOn.disabled=!next.autoAvailable||Boolean(next.blocked)||state==='running'||(state==='enabled'&&here);
         autoOff.disabled=!here||!['enabled','running'].includes(state);
-        message.textContent=notice||next.blocked||(next.currentTitle===next.candidate?'現在の表示名は候補と一致しています。':'登録済み作業から生成しました。');
+        message.textContent=notice||(next.command?.state==='rejected'?next.command.notice:'')||next.blocked||next.command?.notice||(next.currentTitle===next.candidate?'現在の表示名は候補と一致しています。':'登録済み作業から生成しました。');
       }catch{host.hidden=true;snapshot=null;}finally{refreshing=false;}
     }
     workSelect.addEventListener('change',()=>{
