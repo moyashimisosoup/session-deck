@@ -25,16 +25,31 @@
       !globalThis.SessionDeckNaming.generate(data))throw Error('命名指示の形式を確認してください。');
     return data;
   }
-  function observe(document){
+  function latestRequest(document){
+    // The newer view groups a user bubble and its responses into one turn.
+    const turns=[...document.querySelectorAll('main [data-turn-key]')];
+    const turn=turns.findLast(t=>t.querySelector('h4[data-conversation-role="user"]'));
+    if(turn){
+      const users=turn.querySelectorAll('[data-user-message-bubble]');
+      return {user:users.length===1?users[0]:null,requestId:turn.getAttribute('data-turn-key'),
+        replies:[...turn.querySelectorAll('[data-dil-response][data-dil-message-id]')]};
+    }
     const messages=[...document.querySelectorAll('[data-message-author-role]')];
     let index=-1;
     for(let i=messages.length-1;i>=0;i--)if(messages[i].getAttribute('data-message-author-role')==='user'){index=i;break;}
     if(index<0)return null;
-    const user=messages[index], text=boundedText(user,64), mode=action(text);
-    const requestId=user.getAttribute('data-message-id');
-    if(!mode||!requestId||user.querySelector?.('pre,blockquote,code'))return null;
+    const user=messages[index];
+    return {user,requestId:user.getAttribute('data-message-id'),
+      replies:messages.slice(index+1).filter(m=>m.getAttribute('data-message-author-role')==='assistant')};
+  }
+  function observe(document){
+    const request=latestRequest(document);
+    if(!request)return null;
+    const {user,requestId,replies}=request;
+    if(!user||!requestId||user.querySelector?.('pre,blockquote,code'))return null;
+    const mode=action(boundedText(user,64));
+    if(!mode)return null;
     if(mode==='off')return {requestId,mode};
-    const replies=messages.slice(index+1).filter(m=>m.getAttribute('data-message-author-role')==='assistant');
     const blocks=replies.flatMap(m=>[...m.querySelectorAll('code.language-session-deck-namer')]);
     if(blocks.length!==1||blocks[0].closest?.('blockquote'))return null;
     try{
@@ -43,10 +58,7 @@
     }catch{return null;} // Partial or malformed reply never authorizes a write.
   }
   function latestUserId(document){
-    const messages=[...document.querySelectorAll('[data-message-author-role]')];
-    for(let i=messages.length-1;i>=0;i--)if(messages[i].getAttribute('data-message-author-role')==='user')
-      return messages[i].getAttribute('data-message-id');
-    return null;
+    return latestRequest(document)?.requestId||null;
   }
   function instructions(work){
     if(!globalThis.SessionDeckNaming.generate({...work,date:'0101'}))throw Error('登録済み作業を選択してください。');

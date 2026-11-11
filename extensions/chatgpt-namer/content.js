@@ -1,4 +1,4 @@
-/* Session Deck Namer 0.7.0: explicit one-phrase, local naming-command bridge. */
+/* Session Deck Namer: explicit one-phrase, local naming-command bridge. */
 (() => {
   'use strict';
   const naming=globalThis.SessionDeckNaming;
@@ -10,17 +10,20 @@
   const GRANT='sessionDeckNamerWorkGrant:', GRANT_STOP='sessionDeckNamerWorkGrantRevoked:';
   const COMMAND='sessionDeckNamerCommand:', COMMAND_CANCEL='sessionDeckNamerCommandCancelled:';
   const commands=globalThis.SessionDeckNamerCommand;
+  const COMPOSER='form[data-chatgpt-composer] [data-composer-markdown][role="textbox"][contenteditable="true"]';
   let armedCommand=null;
   // A fresh trusted send is required: merely opening old ON messages must
   // never authorize a new conversation during SPA navigation or reload.
   function armCommand(event){
     if(!event.isTrusted)return;
     if(event.type==='click'&&event.target?.closest?.('a[href]')){armedCommand=null;return;}
-    const enter=event.type==='keydown'&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.target?.closest?.('#prompt-textarea');
+    const enter=event.type==='keydown'&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing;
     const send=event.type==='click'&&event.target?.closest?.('button[data-testid="send-button"]');
     if(!enter&&!send)return;
-    const composers=[...document.querySelectorAll('#prompt-textarea')];
-    const mode=composers.length===1?commands?.readAction(composers[0]):null;
+    const composers=new Set([...document.querySelectorAll('#prompt-textarea'),...document.querySelectorAll(COMPOSER)]);
+    const composer=composers.size===1?[...composers][0]:null;
+    if(enter&&(!composer||composer!==event.target?.closest?.('#prompt-textarea')&&composer!==event.target?.closest?.(COMPOSER)))return;
+    const mode=composer?commands?.readAction(composer):null;
     armedCommand=mode?{mode,id:currentId(),previousRequestId:commands.latestUserId(document)}:null;
   }
   document.addEventListener?.('keydown',armCommand,true);
@@ -427,6 +430,7 @@
   if(typeof document.createElement==='function'){
     const host=document.createElement('div');
     host.id='session-deck-namer';
+    host.dataset.namerVersion=chrome.runtime.getManifest?.().version||'';
     const root=host.attachShadow({mode:'open'});
     const style=document.createElement('style');
     style.textContent=':host{position:fixed;right:18px;bottom:96px;z-index:2147483000;font:13px/1.5 system-ui;color:#20314a}section{max-width:310px;padding:14px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 3px 18px #0002}p{margin:5px 0;overflow-wrap:anywhere}button{font:inherit;padding:7px 10px;margin-top:8px;background:#4464dd;color:white;border:0;border-radius:6px;cursor:pointer}button:disabled{opacity:.5;cursor:default}';

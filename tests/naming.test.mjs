@@ -56,7 +56,7 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
   const id=conversationId;
   let title=initialTitle,menuOpen=false,editing=dialogInputTypes!==null,listener,saves=0,sidebarReady=true,messages=[];
   const intervals=[],domListeners={};
-  let composer=null;
+  let composer=null,turns=[];
   const anchor={href:'https://chatgpt.com/c/'+id,innerText:title,
     getAttribute:()=>null,closest:()=>row};
   const row={querySelectorAll:s=>s==='a[href*="/c/"]'?(mixedRow?[anchor,{href:'https://chatgpt.com/c/other-chat'}]:[anchor]):[menuButton]};
@@ -86,7 +86,9 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
     visibilityState:'visible',hasFocus:()=>focused,
     querySelectorAll:s=>{
       if(s==='[data-message-author-role]')return messages;
-      if(s==='#prompt-textarea')return composer?[composer]:[];
+      if(s==='main [data-turn-key]')return turns;
+      if(s==='#prompt-textarea')return composer&&!turns.length?[composer]:[];
+      if(s.startsWith('form[data-chatgpt-composer]'))return composer&&turns.length?[composer]:[];
       if(s==='a[href*="/c/"]')return sidebarReady?[anchor]:[];
       if(s==='[role="menu"]')return menuOpen?[menu]:[];
       if(s.startsWith('[role="menuitem"],'))return menuOpen?menuItems:[];
@@ -116,6 +118,13 @@ function simulateChatGPT({menuLabel='名前を変更', inline=false, ambiguous=f
         composer=user;domListeners.keydown?.({isTrusted:true,type:'keydown',key:'Enter',target:{closest:s=>s==='#prompt-textarea'?composer:null}});
       }
       messages=value;
+    },
+    modernTurns(value,submit=true){
+      if(submit){
+        composer=value.at(-1).querySelectorAll('[data-user-message-bubble]')[0];
+        domListeners.keydown?.({isTrusted:true,type:'keydown',key:'Enter',target:{closest:s=>s.startsWith('form[data-chatgpt-composer]')?composer:null}});
+      }
+      turns=value;
     },
     setTitle(value){title=value;anchor.innerText=value;input.value=value;},navigate(path){loc.href='https://chatgpt.com'+path;}};
 }
@@ -659,6 +668,12 @@ function commandTurn({requestId='user-command-0001',text='自動命名をONに�
   const assistant={getAttribute:k=>k==='data-message-author-role'?'assistant':'reply-fixture',querySelectorAll:()=>Array.from({length:blocks},()=>block)};
   return [user,assistant];
 }
+function modernCommandTurn(options={}){
+  const [user,assistant]=commandTurn(options);
+  return {getAttribute:k=>k==='data-turn-key'?user.getAttribute('data-message-id'):null,
+    querySelector:s=>s==='h4[data-conversation-role="user"]'?{}:null,
+    querySelectorAll:s=>s==='[data-user-message-bubble]'?[user]:s==='[data-dil-response][data-dil-message-id]'?[assistant]:[]};
+}
 const commandKey=id=>'sessionDeckNamerCommand:'+id;
 
 test('Direct command parser rejects quoted, explanatory, oversized and malformed instructions',()=>{
@@ -667,10 +682,23 @@ test('Direct command parser rejects quoted, explanatory, oversized and malformed
   for(const text of ['「自動命名をONにして」','自動命名をONにして、と言う例','自動命名をONにして\n別の依頼'])assert.equal(api.action(text),null);
   for(const payload of [{...work,date:'1332'},{...work,date:'1028',unknown:true},['bad'],null])assert.throws(()=>api.decode(JSON.stringify(payload)));
   assert.throws(()=>api.decode('x'.repeat(2049)));
-  const observe=options=>api.observe({querySelectorAll:()=>commandTurn(options)});
+  const observe=options=>api.observe({querySelectorAll:s=>s==='[data-message-author-role]'?commandTurn(options):[]});
   assert.equal(observe({text:'長'.repeat(65)}),null);assert.equal(observe({blocks:2}),null);
   assert.equal(observe({quoted:true}),null);assert.equal(observe({payload:'{"workId":'}),null);
   assert.equal(observe({userCode:true}),null);
+});
+
+test('The grouped ChatGPT turn uses its own response and a fresh send from the new composer',async()=>{
+  const store={},setup=simulateChatGPT({store});await bind(setup);
+  const sim=simulateChatGPT({store,conversationId:'command-chat-modern'});
+  const prior=modernCommandTurn({requestId:'old-turn'});
+  sim.modernTurns([prior],false);
+  const pending=modernCommandTurn({blocks:0});
+  sim.modernTurns([prior,pending]);
+  await sim.tick();assert.equal(sim.getSaves(),0);
+  sim.modernTurns([prior,modernCommandTurn()],false);
+  await sim.tick();assert.equal(sim.getSaves(),1);
+  await sim.tick();assert.equal(sim.getSaves(),1);
 });
 
 test('A direct request and marked reply bind an existing work and rename once without any ON button',async()=>{
