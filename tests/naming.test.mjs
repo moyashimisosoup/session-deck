@@ -663,13 +663,22 @@ test('Unbinding another conversation never revokes the pre-existing explicit aut
 
 function commandTurn({requestId='user-command-0001',text='自動命名をONにして',payload={...work,date:'1028'},blocks=1,quoted=false,userCode=false}={}){
   const textNode=text=>({nodeType:3,nodeValue:text});
-  const block={childNodes:[textNode(typeof payload==='string'?payload:JSON.stringify(payload))],closest:()=>quoted?{}:null};
+  const replyBlocks=Array.from({length:blocks},()=>({
+    childNodes:[textNode(typeof payload==='string'?payload:JSON.stringify(payload))],closest:()=>quoted?{}:null
+  }));
   const user={childNodes:[textNode(text)],getAttribute:k=>k==='data-message-author-role'?'user':requestId,querySelector:()=>userCode?{}:null};
-  const assistant={getAttribute:k=>k==='data-message-author-role'?'assistant':'reply-fixture',querySelectorAll:()=>Array.from({length:blocks},()=>block)};
+  const assistant={getAttribute:k=>k==='data-message-author-role'?'assistant':'reply-fixture',
+    querySelectorAll:s=>s==='code.language-session-deck-namer'?replyBlocks:[]};
   return [user,assistant];
 }
 function modernCommandTurn(options={}){
-  const [user,assistant]=commandTurn(options);
+  const [user,legacyAssistant]=commandTurn(options);
+  const label={children:[],childNodes:[{nodeType:3,nodeValue:options.language??'session-deck-namer'}]};
+  const blocks=legacyAssistant.querySelectorAll('code.language-session-deck-namer').map(code=>({
+    querySelector:s=>s===':scope > [data-markdown-copy][contenteditable="false"]'?{querySelectorAll:()=>[label]}:null,
+    querySelectorAll:s=>s===':scope > [data-code-block-source] > code'?[code]:[],closest:code.closest
+  }));
+  const assistant={querySelectorAll:s=>s==='[data-code-block]'?blocks:[]};
   return {getAttribute:k=>k==='data-turn-key'?user.getAttribute('data-message-id'):null,
     querySelector:s=>s==='h4[data-conversation-role="user"]'?{}:null,
     querySelectorAll:s=>s==='[data-user-message-bubble]'?[user]:s==='[data-dil-response][data-dil-message-id]'?[assistant]:[]};
@@ -693,9 +702,13 @@ test('The grouped ChatGPT turn uses its own response and a fresh send from the n
   const sim=simulateChatGPT({store,conversationId:'command-chat-modern'});
   const prior=modernCommandTurn({requestId:'old-turn'});
   sim.modernTurns([prior],false);
-  const pending=modernCommandTurn({blocks:0});
+  const pending=modernCommandTurn({language:'json'});
   sim.modernTurns([prior,pending]);
   await sim.tick();assert.equal(sim.getSaves(),0);
+  for(const options of [{blocks:2},{quoted:true}]){
+    sim.modernTurns([prior,modernCommandTurn(options)],false);
+    await sim.tick();assert.equal(sim.getSaves(),0);
+  }
   sim.modernTurns([prior,modernCommandTurn()],false);
   await sim.tick();assert.equal(sim.getSaves(),1);
   await sim.tick();assert.equal(sim.getSaves(),1);

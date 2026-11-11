@@ -42,6 +42,24 @@
     return {user,requestId:user.getAttribute('data-message-id'),
       replies:messages.slice(index+1).filter(m=>m.getAttribute('data-message-author-role')==='assistant')};
   }
+  function markedCode(replies){
+    const blocks=new Set();
+    for(const reply of replies){
+      for(const code of reply.querySelectorAll('code.language-session-deck-namer'))blocks.add(code);
+      for(const block of reply.querySelectorAll('[data-code-block]')){
+        // ChatGPT's newer renderer exposes the fence language in the header.
+        const header=block.querySelector(':scope > [data-markdown-copy][contenteditable="false"]');
+        const labels=[...header?.querySelectorAll('div')||[]].filter(n=>
+          !n.children.length&&boundedText(n,64)?.trim()==='session-deck-namer');
+        if(!labels.length)continue;
+        const sources=block.querySelectorAll(':scope > [data-code-block-source] > code');
+        if(labels.length!==1||sources.length!==1||block.closest('blockquote'))return null;
+        blocks.add(sources[0]);
+      }
+    }
+    const code=blocks.size===1?[...blocks][0]:null;
+    return code&&!code.closest?.('blockquote')?code:null;
+  }
   function observe(document){
     const request=latestRequest(document);
     if(!request)return null;
@@ -50,10 +68,10 @@
     const mode=action(boundedText(user,64));
     if(!mode)return null;
     if(mode==='off')return {requestId,mode};
-    const blocks=replies.flatMap(m=>[...m.querySelectorAll('code.language-session-deck-namer')]);
-    if(blocks.length!==1||blocks[0].closest?.('blockquote'))return null;
+    const code=markedCode(replies);
+    if(!code)return null;
     try{
-      const payload=decode(boundedText(blocks[0],2048));
+      const payload=decode(boundedText(code,2048));
       return {requestId,mode,payload};
     }catch{return null;} // Partial or malformed reply never authorizes a write.
   }
