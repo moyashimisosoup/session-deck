@@ -99,6 +99,41 @@
       "repo": "moyashimisosoup/remote-keyboard",
       "anchor_sha": "a1ad1b325bf72b5867017e1d1bb65da8080b1d79",
       "anchor_kind": "bootstrap"
+    },
+    {
+      "app_id": "APP-025",
+      "repo": "moyashimisosoup/tottori-trip",
+      "anchor_sha": "1e9fe66bcdabfef5e84a7c342233e3d289d0bcb8",
+      "anchor_kind": "bootstrap",
+      "observed_at": "2026-11-28T20:50:59+09:00"
+    },
+    {
+      "app_id": "APP-026",
+      "repo": "yama-books/entrance-counter",
+      "anchor_sha": "ad16e174577a4ddbc44a26a8d199af584c1c0ea9",
+      "anchor_kind": "bootstrap",
+      "observed_at": "2026-11-28T20:50:59+09:00"
+    },
+    {
+      "app_id": "APP-032",
+      "repo": "moyashimisosoup/shortcut-cat",
+      "anchor_sha": "094626192a721e0c285ddfa3627c0c9de63fdeb4",
+      "anchor_kind": "bootstrap",
+      "observed_at": "2026-11-28T20:50:59+09:00"
+    },
+    {
+      "app_id": "APP-033",
+      "repo": "moyashimisosoup/black-cut-auto-print",
+      "anchor_sha": "0af2b3cc7e15c9079f243185bda1ff6236c322d6",
+      "anchor_kind": "bootstrap",
+      "observed_at": "2026-11-28T20:50:59+09:00"
+    },
+    {
+      "app_id": "APP-034",
+      "repo": "yama-books/komu-desk",
+      "anchor_sha": "3763305b6e8dd69823c7793db78677f26f91b023",
+      "anchor_kind": "bootstrap",
+      "observed_at": "2026-11-28T20:50:59+09:00"
     }
   ]
 }
